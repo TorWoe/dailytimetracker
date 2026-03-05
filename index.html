@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Time Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <header>
+            <h1>Daily Time Tracker</h1>
+            <nav>
+                <button class="nav-btn active" data-view="tracker">Timer</button>
+                <button class="nav-btn" data-view="entries">Einträge</button>
+                <button class="nav-btn" data-view="reports">Berichte</button>
+                <button class="nav-btn" data-view="settings">Einstellungen</button>
+            </nav>
+        </header>
+
+        <!-- Timer View -->
+        <section id="tracker" class="view active">
+            <div class="timer-display">
+                <span id="timer">00:00:00</span>
+            </div>
+            <div class="timer-controls">
+                <button id="btn-start" class="btn btn-start">Start</button>
+                <button id="btn-pause" class="btn btn-pause" disabled>Pause</button>
+                <button id="btn-stop" class="btn btn-stop" disabled>Stop</button>
+            </div>
+            <div class="timer-form">
+                <input type="text" id="task-name" placeholder="Aufgabe beschreiben..." autocomplete="off">
+                <select id="project-select">
+                    <option value="">-- Projekt wählen --</option>
+                </select>
+                <select id="category-select">
+                    <option value="">-- Kategorie wählen --</option>
+                </select>
+                <input type="text" id="tag-input" placeholder="Tags (kommagetrennt)">
+            </div>
+            <div class="manual-entry">
+                <h3>Manueller Eintrag</h3>
+                <div class="manual-form">
+                    <input type="text" id="manual-task" placeholder="Aufgabe...">
+                    <select id="manual-project">
+                        <option value="">-- Projekt --</option>
+                    </select>
+                    <select id="manual-category">
+                        <option value="">-- Kategorie --</option>
+                    </select>
+                    <input type="text" id="manual-tags" placeholder="Tags...">
+                    <div class="manual-time-row">
+                        <label>Von: <input type="time" id="manual-start"></label>
+                        <label>Bis: <input type="time" id="manual-end"></label>
+                        <label>Datum: <input type="date" id="manual-date"></label>
+                    </div>
+                    <button id="btn-manual-add" class="btn btn-primary">Hinzufügen</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Entries View -->
+        <section id="entries" class="view">
+            <div class="entries-header">
+                <h2>Zeiteinträge</h2>
+                <div class="entries-filters">
+                    <input type="date" id="filter-date">
+                    <select id="filter-project">
+                        <option value="">Alle Projekte</option>
+                    </select>
+                    <select id="filter-category">
+                        <option value="">Alle Kategorien</option>
+                    </select>
+                    <button id="btn-export" class="btn btn-secondary">CSV Export</button>
+                </div>
+            </div>
+            <div class="entries-list" id="entries-list"></div>
+        </section>
+
+        <!-- Reports View -->
+        <section id="reports" class="view">
+            <div class="reports-header">
+                <h2>Berichte</h2>
+                <div class="report-controls">
+                    <button class="report-tab active" data-period="day">Tag</button>
+                    <button class="report-tab" data-period="week">Woche</button>
+                    <button class="report-tab" data-period="month">Monat</button>
+                </div>
+                <div class="report-nav">
+                    <button id="report-prev" class="btn btn-small">&larr;</button>
+                    <span id="report-date-label"></span>
+                    <button id="report-next" class="btn btn-small">&rarr;</button>
+                </div>
+            </div>
+            <div class="report-summary" id="report-summary"></div>
+            <div class="charts-container">
+                <div class="chart-box">
+                    <h3>Zeit pro Projekt</h3>
+                    <canvas id="chart-projects"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h3>Zeit pro Kategorie</h3>
+                    <canvas id="chart-categories"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h3>Tagesverlauf</h3>
+                    <canvas id="chart-daily"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Settings View -->
+        <section id="settings" class="view">
+            <h2>Einstellungen</h2>
+            <div class="settings-section">
+                <h3>Projekte</h3>
+                <div class="settings-list" id="project-list"></div>
+                <div class="settings-add">
+                    <input type="text" id="new-project" placeholder="Neues Projekt...">
+                    <input type="color" id="new-project-color" value="#4a90d9">
+                    <button id="btn-add-project" class="btn btn-primary">+</button>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3>Kategorien</h3>
+                <div class="settings-list" id="category-list"></div>
+                <div class="settings-add">
+                    <input type="text" id="new-category" placeholder="Neue Kategorie...">
+                    <input type="color" id="new-category-color" value="#e67e22">
+                    <button id="btn-add-category" class="btn btn-primary">+</button>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3>Daten</h3>
+                <button id="btn-export-all" class="btn btn-secondary">Alle Daten exportieren (JSON)</button>
+                <button id="btn-import" class="btn btn-secondary">Daten importieren</button>
+                <input type="file" id="import-file" accept=".json" hidden>
+                <button id="btn-clear-data" class="btn btn-danger">Alle Daten löschen</button>
+            </div>
+        </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

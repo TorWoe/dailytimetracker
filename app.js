@@ -1,0 +1,604 @@
+(function () {
+    'use strict';
+
+    // ── State ──
+    const state = {
+        entries: [],
+        projects: [],
+        categories: [],
+        timer: { running: false, paused: false, startTime: null, elapsed: 0, interval: null },
+        reportPeriod: 'day',
+        reportOffset: 0,
+    };
+
+    // ── LocalStorage ──
+    function save() {
+        localStorage.setItem('dtt_entries', JSON.stringify(state.entries));
+        localStorage.setItem('dtt_projects', JSON.stringify(state.projects));
+        localStorage.setItem('dtt_categories', JSON.stringify(state.categories));
+    }
+
+    function load() {
+        try {
+            state.entries = JSON.parse(localStorage.getItem('dtt_entries')) || [];
+            state.projects = JSON.parse(localStorage.getItem('dtt_projects')) || [];
+            state.categories = JSON.parse(localStorage.getItem('dtt_categories')) || [];
+        } catch {
+            state.entries = [];
+            state.projects = [];
+            state.categories = [];
+        }
+        if (state.projects.length === 0) {
+            state.projects = [
+                { id: uid(), name: 'Arbeit', color: '#4a90d9' },
+                { id: uid(), name: 'Privat', color: '#27ae60' },
+                { id: uid(), name: 'Lernen', color: '#e67e22' },
+            ];
+        }
+        if (state.categories.length === 0) {
+            state.categories = [
+                { id: uid(), name: 'Entwicklung', color: '#9b59b6' },
+                { id: uid(), name: 'Meeting', color: '#e74c3c' },
+                { id: uid(), name: 'Planung', color: '#1abc9c' },
+                { id: uid(), name: 'Sonstiges', color: '#95a5a6' },
+            ];
+        }
+        save();
+    }
+
+    // ── Helpers ──
+    function uid() {
+        return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    }
+
+    function fmt(seconds) {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = Math.floor(seconds % 60);
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function fmtDecimal(seconds) {
+        return (seconds / 3600).toFixed(1) + 'h';
+    }
+
+    function todayStr() {
+        return new Date().toISOString().slice(0, 10);
+    }
+
+    function escHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // ── DOM refs ──
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => document.querySelectorAll(sel);
+
+    // ── Navigation ──
+    $$('.nav-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            $$('.nav-btn').forEach((b) => b.classList.remove('active'));
+            btn.classList.add('active');
+            $$('.view').forEach((v) => v.classList.remove('active'));
+            $(`#${btn.dataset.view}`).classList.add('active');
+            if (btn.dataset.view === 'entries') renderEntries();
+            if (btn.dataset.view === 'reports') renderReports();
+            if (btn.dataset.view === 'settings') renderSettings();
+        });
+    });
+
+    // ── Populate selects ──
+    function populateSelects() {
+        const projectSelects = ['#project-select', '#manual-project', '#filter-project'];
+        const categorySelects = ['#category-select', '#manual-category', '#filter-category'];
+
+        projectSelects.forEach((sel) => {
+            const el = $(sel);
+            const val = el.value;
+            const isFilter = sel.includes('filter');
+            el.innerHTML = `<option value="">${isFilter ? 'Alle Projekte' : '-- Projekt wählen --'}</option>`;
+            state.projects.forEach((p) => {
+                el.innerHTML += `<option value="${p.id}">${escHtml(p.name)}</option>`;
+            });
+            el.value = val;
+        });
+
+        categorySelects.forEach((sel) => {
+            const el = $(sel);
+            const val = el.value;
+            const isFilter = sel.includes('filter');
+            el.innerHTML = `<option value="">${isFilter ? 'Alle Kategorien' : '-- Kategorie wählen --'}</option>`;
+            state.categories.forEach((c) => {
+                el.innerHTML += `<option value="${c.id}">${escHtml(c.name)}</option>`;
+            });
+            el.value = val;
+        });
+    }
+
+    // ── Timer ──
+    function updateTimerDisplay() {
+        const now = state.timer.running ? (Date.now() - state.timer.startTime) / 1000 + state.timer.elapsed : state.timer.elapsed;
+        $('#timer').textContent = fmt(now);
+    }
+
+    $('#btn-start').addEventListener('click', () => {
+        if (!state.timer.running) {
+            state.timer.running = true;
+            state.timer.startTime = Date.now();
+            state.timer.interval = setInterval(updateTimerDisplay, 200);
+            $('#btn-start').disabled = true;
+            $('#btn-pause').disabled = false;
+            $('#btn-stop').disabled = false;
+            $('#btn-start').textContent = 'Start';
+        }
+    });
+
+    $('#btn-pause').addEventListener('click', () => {
+        if (state.timer.running) {
+            state.timer.elapsed += (Date.now() - state.timer.startTime) / 1000;
+            state.timer.running = false;
+            clearInterval(state.timer.interval);
+            $('#btn-start').disabled = false;
+            $('#btn-start').textContent = 'Weiter';
+            $('#btn-pause').disabled = true;
+        }
+    });
+
+    $('#btn-stop').addEventListener('click', () => {
+        let totalSeconds = state.timer.elapsed;
+        if (state.timer.running) {
+            totalSeconds += (Date.now() - state.timer.startTime) / 1000;
+        }
+        clearInterval(state.timer.interval);
+        state.timer.running = false;
+        state.timer.elapsed = 0;
+        state.timer.startTime = null;
+        $('#timer').textContent = '00:00:00';
+        $('#btn-start').disabled = false;
+        $('#btn-start').textContent = 'Start';
+        $('#btn-pause').disabled = true;
+        $('#btn-stop').disabled = true;
+
+        if (totalSeconds < 1) return;
+
+        const task = $('#task-name').value.trim() || 'Ohne Bezeichnung';
+        const entry = {
+            id: uid(),
+            task: task,
+            project: $('#project-select').value,
+            category: $('#category-select').value,
+            tags: $('#tag-input').value.split(',').map((t) => t.trim()).filter(Boolean),
+            date: todayStr(),
+            start: new Date(Date.now() - totalSeconds * 1000).toTimeString().slice(0, 5),
+            end: new Date().toTimeString().slice(0, 5),
+            duration: Math.round(totalSeconds),
+        };
+        state.entries.push(entry);
+        save();
+        $('#task-name').value = '';
+        $('#tag-input').value = '';
+    });
+
+    // ── Manual Entry ──
+    $('#manual-date').value = todayStr();
+
+    $('#btn-manual-add').addEventListener('click', () => {
+        const task = $('#manual-task').value.trim() || 'Ohne Bezeichnung';
+        const startTime = $('#manual-start').value;
+        const endTime = $('#manual-end').value;
+        const date = $('#manual-date').value;
+
+        if (!startTime || !endTime || !date) {
+            alert('Bitte Start, Ende und Datum angeben.');
+            return;
+        }
+
+        const startDate = new Date(`${date}T${startTime}`);
+        const endDate = new Date(`${date}T${endTime}`);
+        let duration = (endDate - startDate) / 1000;
+        if (duration <= 0) {
+            alert('Endzeit muss nach Startzeit liegen.');
+            return;
+        }
+
+        const entry = {
+            id: uid(),
+            task: task,
+            project: $('#manual-project').value,
+            category: $('#manual-category').value,
+            tags: $('#manual-tags').value.split(',').map((t) => t.trim()).filter(Boolean),
+            date: date,
+            start: startTime,
+            end: endTime,
+            duration: Math.round(duration),
+        };
+        state.entries.push(entry);
+        save();
+        $('#manual-task').value = '';
+        $('#manual-tags').value = '';
+        $('#manual-start').value = '';
+        $('#manual-end').value = '';
+    });
+
+    // ── Entries View ──
+    function renderEntries() {
+        const filterDate = $('#filter-date').value;
+        const filterProject = $('#filter-project').value;
+        const filterCategory = $('#filter-category').value;
+
+        let filtered = [...state.entries];
+        if (filterDate) filtered = filtered.filter((e) => e.date === filterDate);
+        if (filterProject) filtered = filtered.filter((e) => e.project === filterProject);
+        if (filterCategory) filtered = filtered.filter((e) => e.category === filterCategory);
+
+        filtered.sort((a, b) => {
+            if (a.date !== b.date) return b.date.localeCompare(a.date);
+            return b.start.localeCompare(a.start);
+        });
+
+        const list = $('#entries-list');
+        if (filtered.length === 0) {
+            list.innerHTML = '<div class="no-entries">Keine Einträge gefunden.</div>';
+            return;
+        }
+
+        list.innerHTML = filtered
+            .map((e) => {
+                const proj = state.projects.find((p) => p.id === e.project);
+                const cat = state.categories.find((c) => c.id === e.category);
+                const tagsHtml = (e.tags || []).map((t) => `<span class="tag">${escHtml(t)}</span>`).join('');
+                const projBadge = proj ? `<span class="project-badge" style="background:${proj.color}33;color:${proj.color}">${escHtml(proj.name)}</span>` : '';
+                const catBadge = cat ? `<span class="category-badge" style="background:${cat.color}33;color:${cat.color}">${escHtml(cat.name)}</span>` : '';
+
+                return `<div class="entry-card">
+                    <div class="entry-info">
+                        <div class="entry-task">${escHtml(e.task)}</div>
+                        <div class="entry-meta">
+                            <span>${e.date}</span>
+                            <span>${e.start} – ${e.end}</span>
+                            ${projBadge}${catBadge}
+                        </div>
+                        <div style="margin-top:4px">${tagsHtml}</div>
+                    </div>
+                    <div class="entry-duration">${fmt(e.duration)}</div>
+                    <div class="entry-actions">
+                        <button onclick="app.deleteEntry('${e.id}')">Löschen</button>
+                    </div>
+                </div>`;
+            })
+            .join('');
+    }
+
+    $('#filter-date').addEventListener('change', renderEntries);
+    $('#filter-project').addEventListener('change', renderEntries);
+    $('#filter-category').addEventListener('change', renderEntries);
+
+    // ── CSV Export ──
+    $('#btn-export').addEventListener('click', () => {
+        const filterDate = $('#filter-date').value;
+        const filterProject = $('#filter-project').value;
+        const filterCategory = $('#filter-category').value;
+
+        let filtered = [...state.entries];
+        if (filterDate) filtered = filtered.filter((e) => e.date === filterDate);
+        if (filterProject) filtered = filtered.filter((e) => e.project === filterProject);
+        if (filterCategory) filtered = filtered.filter((e) => e.category === filterCategory);
+
+        const headers = ['Datum', 'Start', 'Ende', 'Dauer (Min)', 'Aufgabe', 'Projekt', 'Kategorie', 'Tags'];
+        const rows = filtered.map((e) => {
+            const proj = state.projects.find((p) => p.id === e.project);
+            const cat = state.categories.find((c) => c.id === e.category);
+            return [e.date, e.start, e.end, Math.round(e.duration / 60), `"${e.task}"`, proj ? proj.name : '', cat ? cat.name : '', (e.tags || []).join('; ')];
+        });
+
+        const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+        const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `timetracker_export_${todayStr()}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+
+    // ── Reports ──
+    let chartProjects = null;
+    let chartCategories = null;
+    let chartDaily = null;
+
+    $$('.report-tab').forEach((tab) => {
+        tab.addEventListener('click', () => {
+            $$('.report-tab').forEach((t) => t.classList.remove('active'));
+            tab.classList.add('active');
+            state.reportPeriod = tab.dataset.period;
+            state.reportOffset = 0;
+            renderReports();
+        });
+    });
+
+    $('#report-prev').addEventListener('click', () => {
+        state.reportOffset--;
+        renderReports();
+    });
+
+    $('#report-next').addEventListener('click', () => {
+        state.reportOffset++;
+        renderReports();
+    });
+
+    function getReportRange() {
+        const now = new Date();
+        let start, end, label;
+
+        if (state.reportPeriod === 'day') {
+            const d = new Date(now);
+            d.setDate(d.getDate() + state.reportOffset);
+            const ds = d.toISOString().slice(0, 10);
+            start = ds;
+            end = ds;
+            label = d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        } else if (state.reportPeriod === 'week') {
+            const d = new Date(now);
+            d.setDate(d.getDate() + state.reportOffset * 7);
+            const day = d.getDay();
+            const monday = new Date(d);
+            monday.setDate(d.getDate() - ((day + 6) % 7));
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            start = monday.toISOString().slice(0, 10);
+            end = sunday.toISOString().slice(0, 10);
+            label = `KW ${getWeekNumber(monday)} – ${monday.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })} bis ${sunday.toLocaleDateString('de-DE', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+        } else {
+            const d = new Date(now.getFullYear(), now.getMonth() + state.reportOffset, 1);
+            start = d.toISOString().slice(0, 10);
+            const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+            end = lastDay.toISOString().slice(0, 10);
+            label = d.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+        }
+        return { start, end, label };
+    }
+
+    function getWeekNumber(d) {
+        const date = new Date(d);
+        date.setHours(0, 0, 0, 0);
+        date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7));
+        const week1 = new Date(date.getFullYear(), 0, 4);
+        return 1 + Math.round(((date - week1) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
+    }
+
+    function renderReports() {
+        const { start, end, label } = getReportRange();
+        $('#report-date-label').textContent = label;
+
+        const entries = state.entries.filter((e) => e.date >= start && e.date <= end);
+        const totalSeconds = entries.reduce((sum, e) => sum + e.duration, 0);
+        const uniqueDays = new Set(entries.map((e) => e.date)).size;
+
+        $('#report-summary').innerHTML = `
+            <div class="summary-card"><div class="label">Gesamtzeit</div><div class="value">${fmt(totalSeconds)}</div></div>
+            <div class="summary-card"><div class="label">Einträge</div><div class="value">${entries.length}</div></div>
+            <div class="summary-card"><div class="label">Aktive Tage</div><div class="value">${uniqueDays}</div></div>
+            <div class="summary-card"><div class="label">Ø pro Tag</div><div class="value">${uniqueDays ? fmtDecimal(totalSeconds / uniqueDays) : '0.0h'}</div></div>
+        `;
+
+        renderCharts(entries, start, end);
+    }
+
+    function renderCharts(entries, start, end) {
+        // Project chart
+        const projectData = {};
+        entries.forEach((e) => {
+            const proj = state.projects.find((p) => p.id === e.project);
+            const name = proj ? proj.name : 'Ohne Projekt';
+            const color = proj ? proj.color : '#666';
+            if (!projectData[name]) projectData[name] = { seconds: 0, color };
+            projectData[name].seconds += e.duration;
+        });
+
+        if (chartProjects) chartProjects.destroy();
+        const projLabels = Object.keys(projectData);
+        chartProjects = new Chart($('#chart-projects'), {
+            type: 'doughnut',
+            data: {
+                labels: projLabels,
+                datasets: [{
+                    data: projLabels.map((l) => Math.round(projectData[l].seconds / 60)),
+                    backgroundColor: projLabels.map((l) => projectData[l].color),
+                    borderWidth: 0,
+                }],
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#eee', padding: 12 } },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw} min` } },
+                },
+            },
+        });
+
+        // Category chart
+        const catData = {};
+        entries.forEach((e) => {
+            const cat = state.categories.find((c) => c.id === e.category);
+            const name = cat ? cat.name : 'Ohne Kategorie';
+            const color = cat ? cat.color : '#666';
+            if (!catData[name]) catData[name] = { seconds: 0, color };
+            catData[name].seconds += e.duration;
+        });
+
+        if (chartCategories) chartCategories.destroy();
+        const catLabels = Object.keys(catData);
+        chartCategories = new Chart($('#chart-categories'), {
+            type: 'doughnut',
+            data: {
+                labels: catLabels,
+                datasets: [{
+                    data: catLabels.map((l) => Math.round(catData[l].seconds / 60)),
+                    backgroundColor: catLabels.map((l) => catData[l].color),
+                    borderWidth: 0,
+                }],
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#eee', padding: 12 } },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw} min` } },
+                },
+            },
+        });
+
+        // Daily bar chart
+        const dayMap = {};
+        const d = new Date(start);
+        const endDate = new Date(end);
+        while (d <= endDate) {
+            dayMap[d.toISOString().slice(0, 10)] = 0;
+            d.setDate(d.getDate() + 1);
+        }
+        entries.forEach((e) => {
+            if (dayMap[e.date] !== undefined) dayMap[e.date] += e.duration;
+        });
+
+        if (chartDaily) chartDaily.destroy();
+        const dayLabels = Object.keys(dayMap);
+        const shortLabels = dayLabels.map((d) => {
+            const dt = new Date(d + 'T00:00:00');
+            return dt.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric' });
+        });
+
+        chartDaily = new Chart($('#chart-daily'), {
+            type: 'bar',
+            data: {
+                labels: shortLabels,
+                datasets: [{
+                    data: dayLabels.map((d) => Math.round(dayMap[d] / 60)),
+                    backgroundColor: '#4a90d9',
+                    borderRadius: 4,
+                }],
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.raw} min` } },
+                },
+                scales: {
+                    x: { ticks: { color: '#8899aa' }, grid: { display: false } },
+                    y: { ticks: { color: '#8899aa' }, grid: { color: '#2a3a5e' }, title: { display: true, text: 'Minuten', color: '#8899aa' } },
+                },
+            },
+        });
+    }
+
+    // ── Settings ──
+    function renderSettings() {
+        renderSettingsList('project');
+        renderSettingsList('category');
+    }
+
+    function renderSettingsList(type) {
+        const items = type === 'project' ? state.projects : state.categories;
+        const listEl = $(`#${type}-list`);
+        listEl.innerHTML = items
+            .map(
+                (item) => `<div class="settings-item">
+                <span class="color-dot" style="background:${item.color}"></span>
+                <span class="name">${escHtml(item.name)}</span>
+                <button onclick="app.deleteItem('${type}','${item.id}')">Löschen</button>
+            </div>`
+            )
+            .join('');
+    }
+
+    $('#btn-add-project').addEventListener('click', () => {
+        const name = $('#new-project').value.trim();
+        if (!name) return;
+        state.projects.push({ id: uid(), name, color: $('#new-project-color').value });
+        save();
+        $('#new-project').value = '';
+        populateSelects();
+        renderSettings();
+    });
+
+    $('#btn-add-category').addEventListener('click', () => {
+        const name = $('#new-category').value.trim();
+        if (!name) return;
+        state.categories.push({ id: uid(), name, color: $('#new-category-color').value });
+        save();
+        $('#new-category').value = '';
+        populateSelects();
+        renderSettings();
+    });
+
+    // ── Data Management ──
+    $('#btn-export-all').addEventListener('click', () => {
+        const data = { entries: state.entries, projects: state.projects, categories: state.categories };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `timetracker_backup_${todayStr()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+
+    $('#btn-import').addEventListener('click', () => $('#import-file').click());
+
+    $('#import-file').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                const data = JSON.parse(ev.target.result);
+                if (data.entries) state.entries = data.entries;
+                if (data.projects) state.projects = data.projects;
+                if (data.categories) state.categories = data.categories;
+                save();
+                populateSelects();
+                alert('Daten erfolgreich importiert!');
+            } catch {
+                alert('Fehler beim Import. Ungültige Datei.');
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+    });
+
+    $('#btn-clear-data').addEventListener('click', () => {
+        if (confirm('Wirklich ALLE Daten löschen? Dies kann nicht rückgängig gemacht werden!')) {
+            state.entries = [];
+            save();
+            renderEntries();
+            alert('Alle Zeiteinträge wurden gelöscht.');
+        }
+    });
+
+    // ── Global API for inline handlers ──
+    window.app = {
+        deleteEntry(id) {
+            if (!confirm('Eintrag löschen?')) return;
+            state.entries = state.entries.filter((e) => e.id !== id);
+            save();
+            renderEntries();
+        },
+        deleteItem(type, id) {
+            if (!confirm('Wirklich löschen?')) return;
+            if (type === 'project') {
+                state.projects = state.projects.filter((p) => p.id !== id);
+            } else {
+                state.categories = state.categories.filter((c) => c.id !== id);
+            }
+            save();
+            populateSelects();
+            renderSettings();
+        },
+    };
+
+    // ── Init ──
+    load();
+    populateSelects();
+    $('#filter-date').value = todayStr();
+})();
