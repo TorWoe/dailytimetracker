@@ -43,6 +43,8 @@
                 { id: uid(), name: 'Sonstiges', color: '#95a5a6' },
             ];
         }
+        state.projects.sort((a, b) => a.name.localeCompare(b.name, 'de'));
+        state.categories.sort((a, b) => a.name.localeCompare(b.name, 'de'));
         save();
     }
 
@@ -516,6 +518,7 @@
         const name = $('#new-project').value.trim();
         if (!name) return;
         state.projects.push({ id: uid(), name, color: $('#new-project-color').value });
+        state.projects.sort((a, b) => a.name.localeCompare(b.name, 'de'));
         save();
         $('#new-project').value = '';
         populateSelects();
@@ -526,6 +529,7 @@
         const name = $('#new-category').value.trim();
         if (!name) return;
         state.categories.push({ id: uid(), name, color: $('#new-category-color').value });
+        state.categories.sort((a, b) => a.name.localeCompare(b.name, 'de'));
         save();
         $('#new-category').value = '';
         populateSelects();
