@@ -508,6 +508,11 @@ input::placeholder {
     flex: 1;
 }
 
+.settings-item-actions {
+    display: flex;
+    gap: 6px;
+}
+
 .settings-item button {
     background: none;
     border: none;
@@ -519,6 +524,44 @@ input::placeholder {
 
 .settings-item button:hover {
     color: var(--accent);
+}
+
+.settings-item button.btn-save {
+    color: var(--success);
+}
+
+.settings-item button.btn-save:hover {
+    color: #219a52;
+}
+
+.settings-item.editing {
+    gap: 8px;
+}
+
+.settings-item .edit-color {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-input);
+    cursor: pointer;
+    padding: 2px;
+    flex-shrink: 0;
+}
+
+.settings-item .edit-name {
+    flex: 1;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.settings-item .edit-name:focus {
+    border-color: var(--primary);
 }
 
 .settings-add {
