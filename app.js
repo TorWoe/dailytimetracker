@@ -505,10 +505,13 @@
         const listEl = $(`#${type}-list`);
         listEl.innerHTML = items
             .map(
-                (item) => `<div class="settings-item">
+                (item) => `<div class="settings-item" id="item-${item.id}">
                 <span class="color-dot" style="background:${item.color}"></span>
                 <span class="name">${escHtml(item.name)}</span>
-                <button onclick="app.deleteItem('${type}','${item.id}')">Löschen</button>
+                <div class="settings-item-actions">
+                    <button onclick="app.editItem('${type}','${item.id}')">Bearbeiten</button>
+                    <button onclick="app.deleteItem('${type}','${item.id}')">Löschen</button>
+                </div>
             </div>`
             )
             .join('');
@@ -597,6 +600,44 @@
             }
             save();
             populateSelects();
+            renderSettings();
+        },
+        editItem(type, id) {
+            const items = type === 'project' ? state.projects : state.categories;
+            const item = items.find((i) => i.id === id);
+            if (!item) return;
+            const el = $(`#item-${id}`);
+            el.classList.add('editing');
+            el.innerHTML = `
+                <input type="color" class="edit-color" value="${item.color}">
+                <input type="text" class="edit-name" value="${escHtml(item.name)}">
+                <div class="settings-item-actions">
+                    <button class="btn-save" onclick="app.saveItem('${type}','${id}')">Speichern</button>
+                    <button onclick="app.cancelEdit()">Abbrechen</button>
+                </div>
+            `;
+            el.querySelector('.edit-name').focus();
+            el.querySelector('.edit-name').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') app.saveItem(type, id);
+                if (e.key === 'Escape') app.cancelEdit();
+            });
+        },
+        saveItem(type, id) {
+            const el = $(`#item-${id}`);
+            const newName = el.querySelector('.edit-name').value.trim();
+            if (!newName) return;
+            const newColor = el.querySelector('.edit-color').value;
+            const items = type === 'project' ? state.projects : state.categories;
+            const item = items.find((i) => i.id === id);
+            if (!item) return;
+            item.name = newName;
+            item.color = newColor;
+            items.sort((a, b) => a.name.localeCompare(b.name, 'de'));
+            save();
+            populateSelects();
+            renderSettings();
+        },
+        cancelEdit() {
             renderSettings();
         },
     };
