@@ -14,6 +14,7 @@
                 <button class="nav-btn active" data-view="tracker">Timer</button>
                 <button class="nav-btn" data-view="entries">Einträge</button>
                 <button class="nav-btn" data-view="reports">Berichte</button>
+                <button class="nav-btn" data-view="search">Suche</button>
                 <button class="nav-btn" data-view="settings">Einstellungen</button>
             </nav>
         </header>
@@ -64,7 +65,9 @@
             <div class="entries-header">
                 <h2>Zeiteinträge</h2>
                 <div class="entries-filters">
+                    <button id="filter-date-prev" class="btn btn-small">&larr;</button>
                     <input type="date" id="filter-date">
+                    <button id="filter-date-next" class="btn btn-small">&rarr;</button>
                     <select id="filter-project">
                         <option value="">Alle Projekte</option>
                     </select>
@@ -107,6 +110,27 @@
                     <canvas id="chart-daily"></canvas>
                 </div>
             </div>
+        </section>
+
+        <!-- Search View -->
+        <section id="search" class="view">
+            <div class="search-header">
+                <h2>Suche</h2>
+                <div class="search-filters">
+                    <input type="text" id="search-text" placeholder="Aufgabe oder Tag suchen...">
+                    <div class="multi-select" id="search-project-select">
+                        <div class="multi-select-toggle">Alle Projekte</div>
+                        <div class="multi-select-dropdown"></div>
+                    </div>
+                    <div class="multi-select" id="search-category-select">
+                        <div class="multi-select-toggle">Alle Kategorien</div>
+                        <div class="multi-select-dropdown"></div>
+                    </div>
+                    <button id="btn-search" class="btn btn-primary">Suchen</button>
+                </div>
+            </div>
+            <div class="search-result-count" id="search-result-count"></div>
+            <div class="entries-list" id="search-results"></div>
         </section>
 
         <!-- Settings View -->
