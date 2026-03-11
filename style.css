@@ -179,6 +179,8 @@ nav {
     background: var(--bg-input);
     color: var(--text);
     border: 1px solid var(--border);
+    flex-shrink: 0;
+    flex-grow: 0;
 }
 
 .btn-small:hover {
@@ -279,9 +281,13 @@ input::placeholder {
     align-items: center;
 }
 
-.entries-filters input,
 .entries-filters select {
     flex: 1;
+    min-width: 140px;
+}
+
+.entries-filters input[type="date"] {
+    flex: 0 1 auto;
     min-width: 140px;
 }
 
