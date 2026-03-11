@@ -267,6 +267,7 @@
                     </div>
                     <div class="entry-duration">${fmt(e.duration)}</div>
                     <div class="entry-actions">
+                        <button onclick="app.editEntry('${e.id}')">Bearbeiten</button>
                         <button onclick="app.deleteEntry('${e.id}')">Löschen</button>
                     </div>
                 </div>`;
@@ -723,7 +724,93 @@
     });
 
     // ── Global API for inline handlers ──
+    let editingEntryId = null;
+
+    function openEditModal(entry) {
+        editingEntryId = entry.id;
+        const modal = $('#edit-modal');
+
+        // Populate project select
+        const projSel = $('#edit-project');
+        projSel.innerHTML = '<option value="">-- Projekt wählen --</option>';
+        state.projects.forEach((p) => {
+            projSel.innerHTML += `<option value="${p.id}">${escHtml(p.name)}</option>`;
+        });
+
+        // Populate category select
+        const catSel = $('#edit-category');
+        catSel.innerHTML = '<option value="">-- Kategorie wählen --</option>';
+        state.categories.forEach((c) => {
+            catSel.innerHTML += `<option value="${c.id}">${escHtml(c.name)}</option>`;
+        });
+
+        // Fill in current values
+        $('#edit-task').value = entry.task;
+        projSel.value = entry.project;
+        catSel.value = entry.category;
+        $('#edit-tags').value = (entry.tags || []).join(', ');
+        $('#edit-date').value = entry.date;
+        $('#edit-start').value = entry.start;
+        $('#edit-end').value = entry.end;
+
+        modal.hidden = false;
+    }
+
+    $('#edit-save').addEventListener('click', () => {
+        const task = $('#edit-task').value.trim() || 'Ohne Bezeichnung';
+        const startTime = $('#edit-start').value;
+        const endTime = $('#edit-end').value;
+        const date = $('#edit-date').value;
+
+        if (!startTime || !endTime || !date) {
+            alert('Bitte Start, Ende und Datum angeben.');
+            return;
+        }
+
+        const startDate = new Date(`${date}T${startTime}`);
+        const endDate = new Date(`${date}T${endTime}`);
+        let duration = (endDate - startDate) / 1000;
+        if (duration <= 0) {
+            alert('Endzeit muss nach Startzeit liegen.');
+            return;
+        }
+
+        const entry = state.entries.find((e) => e.id === editingEntryId);
+        if (!entry) return;
+
+        entry.task = task;
+        entry.project = $('#edit-project').value;
+        entry.category = $('#edit-category').value;
+        entry.tags = $('#edit-tags').value.split(',').map((t) => t.trim()).filter(Boolean);
+        entry.date = date;
+        entry.start = startTime;
+        entry.end = endTime;
+        entry.duration = Math.round(duration);
+
+        save();
+        $('#edit-modal').hidden = true;
+        editingEntryId = null;
+        renderEntries();
+    });
+
+    $('#edit-cancel').addEventListener('click', () => {
+        $('#edit-modal').hidden = true;
+        editingEntryId = null;
+    });
+
+    $('#edit-modal').addEventListener('click', (e) => {
+        if (e.target === $('#edit-modal')) {
+            $('#edit-modal').hidden = true;
+            editingEntryId = null;
+        }
+    });
+
     window.app = {
+        editEntry(id) {
+            const entry = state.entries.find((e) => e.id === id);
+            if (!entry) return;
+            openEditModal(entry);
+        },
         deleteEntry(id) {
             if (!confirm('Eintrag löschen?')) return;
             state.entries = state.entries.filter((e) => e.id !== id);
