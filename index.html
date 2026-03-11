@@ -164,6 +164,32 @@
         </section>
     </div>
 
+    <!-- Edit Entry Modal -->
+    <div class="modal-overlay" id="edit-modal" hidden>
+        <div class="modal">
+            <h3>Eintrag bearbeiten</h3>
+            <div class="modal-form">
+                <label>Aufgabe<input type="text" id="edit-task"></label>
+                <label>Projekt
+                    <select id="edit-project"></select>
+                </label>
+                <label>Kategorie
+                    <select id="edit-category"></select>
+                </label>
+                <label>Tags<input type="text" id="edit-tags" placeholder="kommagetrennt"></label>
+                <div class="modal-time-row">
+                    <label>Datum<input type="date" id="edit-date"></label>
+                    <label>Von<input type="time" id="edit-start"></label>
+                    <label>Bis<input type="time" id="edit-end"></label>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" id="edit-save">Speichern</button>
+                <button class="btn btn-secondary" id="edit-cancel">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="app.js"></script>
 </body>
