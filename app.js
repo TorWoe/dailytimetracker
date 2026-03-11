@@ -277,6 +277,22 @@
     $('#filter-project').addEventListener('change', renderEntries);
     $('#filter-category').addEventListener('change', renderEntries);
 
+    $('#filter-date-prev').addEventListener('click', () => {
+        const el = $('#filter-date');
+        const d = el.value ? new Date(el.value + 'T00:00:00') : new Date();
+        d.setDate(d.getDate() - 1);
+        el.value = d.toISOString().slice(0, 10);
+        renderEntries();
+    });
+
+    $('#filter-date-next').addEventListener('click', () => {
+        const el = $('#filter-date');
+        const d = el.value ? new Date(el.value + 'T00:00:00') : new Date();
+        d.setDate(d.getDate() + 1);
+        el.value = d.toISOString().slice(0, 10);
+        renderEntries();
+    });
+
     // ── CSV Export ──
     $('#btn-export').addEventListener('click', () => {
         const filterDate = $('#filter-date').value;
