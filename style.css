@@ -466,6 +466,105 @@ input::placeholder {
     margin-bottom: 12px;
 }
 
+/* Search */
+.search-header {
+    margin-bottom: 20px;
+}
+
+.search-header h2 {
+    margin-bottom: 12px;
+}
+
+.search-filters {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.search-filters input[type="text"] {
+    flex: 1;
+    min-width: 180px;
+}
+
+.search-result-count {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+}
+
+.multi-select {
+    position: relative;
+    flex: 1;
+    min-width: 160px;
+}
+
+.multi-select-toggle {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.multi-select-toggle:hover {
+    border-color: var(--primary);
+}
+
+.multi-select-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-top: 4px;
+    padding: 6px 0;
+    z-index: 100;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.multi-select-dropdown.open {
+    display: block;
+}
+
+.multi-select-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.15s;
+}
+
+.multi-select-option:hover {
+    background: var(--bg-input);
+}
+
+.multi-select-option input[type="checkbox"] {
+    accent-color: var(--primary);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.multi-select-option .color-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
 /* Settings */
 .settings-section {
     background: var(--bg-card);
@@ -604,6 +703,10 @@ input::placeholder {
     }
 
     .entries-filters {
+        flex-direction: column;
+    }
+
+    .search-filters {
         flex-direction: column;
     }
 

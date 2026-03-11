@@ -87,6 +87,7 @@
             $(`#${btn.dataset.view}`).classList.add('active');
             if (btn.dataset.view === 'entries') renderEntries();
             if (btn.dataset.view === 'reports') renderReports();
+            if (btn.dataset.view === 'search') initSearchMultiSelects();
             if (btn.dataset.view === 'settings') renderSettings();
         });
     });
@@ -509,6 +510,128 @@
             },
         });
     }
+
+    // ── Search ──
+    function populateMultiSelect(containerId, items, labelAll) {
+        const container = $(`#${containerId}`);
+        const dropdown = container.querySelector('.multi-select-dropdown');
+        const toggle = container.querySelector('.multi-select-toggle');
+        dropdown.innerHTML = items
+            .map((item) => `<label class="multi-select-option">
+                <input type="checkbox" value="${item.id}">
+                <span class="color-dot" style="background:${item.color}"></span>
+                ${escHtml(item.name)}
+            </label>`)
+            .join('');
+
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            $$('.multi-select-dropdown').forEach((d) => {
+                if (d !== dropdown) d.classList.remove('open');
+            });
+            dropdown.classList.toggle('open');
+        });
+
+        dropdown.addEventListener('change', () => {
+            const checked = dropdown.querySelectorAll('input:checked');
+            if (checked.length === 0) {
+                toggle.textContent = labelAll;
+            } else {
+                const names = Array.from(checked).map((cb) => {
+                    const item = items.find((i) => i.id === cb.value);
+                    return item ? item.name : '';
+                });
+                toggle.textContent = names.join(', ');
+            }
+        });
+    }
+
+    function initSearchMultiSelects() {
+        populateMultiSelect('search-project-select', state.projects, 'Alle Projekte');
+        populateMultiSelect('search-category-select', state.categories, 'Alle Kategorien');
+    }
+
+    function getMultiSelectValues(containerId) {
+        const checkboxes = $(`#${containerId}`).querySelectorAll('.multi-select-dropdown input:checked');
+        return Array.from(checkboxes).map((cb) => cb.value);
+    }
+
+    function renderSearch() {
+        const query = $('#search-text').value.trim().toLowerCase();
+        const selectedProjects = getMultiSelectValues('search-project-select');
+        const selectedCategories = getMultiSelectValues('search-category-select');
+
+        let filtered = [...state.entries];
+
+        if (query) {
+            filtered = filtered.filter((e) => {
+                const taskMatch = e.task.toLowerCase().includes(query);
+                const tagMatch = (e.tags || []).some((t) => t.toLowerCase().includes(query));
+                return taskMatch || tagMatch;
+            });
+        }
+
+        if (selectedProjects.length > 0) {
+            filtered = filtered.filter((e) => selectedProjects.includes(e.project));
+        }
+
+        if (selectedCategories.length > 0) {
+            filtered = filtered.filter((e) => selectedCategories.includes(e.category));
+        }
+
+        filtered.sort((a, b) => {
+            if (a.date !== b.date) return b.date.localeCompare(a.date);
+            return b.start.localeCompare(a.start);
+        });
+
+        const countEl = $('#search-result-count');
+        const list = $('#search-results');
+
+        if (!query && selectedProjects.length === 0 && selectedCategories.length === 0) {
+            countEl.textContent = '';
+            list.innerHTML = '<div class="no-entries">Bitte Suchbegriff eingeben oder Filter wählen.</div>';
+            return;
+        }
+
+        countEl.textContent = `${filtered.length} Ergebnis${filtered.length !== 1 ? 'se' : ''} gefunden`;
+
+        if (filtered.length === 0) {
+            list.innerHTML = '<div class="no-entries">Keine Einträge gefunden.</div>';
+            return;
+        }
+
+        list.innerHTML = filtered
+            .map((e) => {
+                const proj = state.projects.find((p) => p.id === e.project);
+                const cat = state.categories.find((c) => c.id === e.category);
+                const tagsHtml = (e.tags || []).map((t) => `<span class="tag">${escHtml(t)}</span>`).join('');
+                const projBadge = proj ? `<span class="project-badge" style="background:${proj.color}33;color:${proj.color}">${escHtml(proj.name)}</span>` : '';
+                const catBadge = cat ? `<span class="category-badge" style="background:${cat.color}33;color:${cat.color}">${escHtml(cat.name)}</span>` : '';
+
+                return `<div class="entry-card">
+                    <div class="entry-info">
+                        <div class="entry-task">${escHtml(e.task)}</div>
+                        <div class="entry-meta">
+                            <span>${e.date}</span>
+                            <span>${e.start} – ${e.end}</span>
+                            ${projBadge}${catBadge}
+                        </div>
+                        <div style="margin-top:4px">${tagsHtml}</div>
+                    </div>
+                    <div class="entry-duration">${fmt(e.duration)}</div>
+                </div>`;
+            })
+            .join('');
+    }
+
+    $('#btn-search').addEventListener('click', renderSearch);
+    $('#search-text').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') renderSearch();
+    });
+
+    document.addEventListener('click', () => {
+        $$('.multi-select-dropdown').forEach((d) => d.classList.remove('open'));
+    });
 
     // ── Settings ──
     function renderSettings() {
