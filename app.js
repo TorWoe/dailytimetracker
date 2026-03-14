@@ -9,6 +9,8 @@
         timer: { running: false, paused: false, startTime: null, elapsed: 0, interval: null },
         reportPeriod: 'day',
         reportOffset: 0,
+        reportCustomStart: '',
+        reportCustomEnd: '',
     };
 
     // ── LocalStorage ──
@@ -328,14 +330,39 @@
     let chartCategories = null;
     let chartDaily = null;
 
+    function updateReportNav() {
+        const isCustom = state.reportPeriod === 'custom';
+        $('.report-nav').style.display = isCustom ? 'none' : 'flex';
+    }
+
     $$('.report-tab').forEach((tab) => {
         tab.addEventListener('click', () => {
             $$('.report-tab').forEach((t) => t.classList.remove('active'));
             tab.classList.add('active');
             state.reportPeriod = tab.dataset.period;
             state.reportOffset = 0;
+            updateReportNav();
             renderReports();
         });
+    });
+
+    $('#report-range-apply').addEventListener('click', () => {
+        const startVal = $('#report-range-start').value;
+        const endVal = $('#report-range-end').value;
+        if (!startVal || !endVal) {
+            alert('Bitte Start- und Enddatum angeben.');
+            return;
+        }
+        if (startVal > endVal) {
+            alert('Startdatum muss vor dem Enddatum liegen.');
+            return;
+        }
+        $$('.report-tab').forEach((t) => t.classList.remove('active'));
+        state.reportPeriod = 'custom';
+        state.reportCustomStart = startVal;
+        state.reportCustomEnd = endVal;
+        updateReportNav();
+        renderReports();
     });
 
     $('#report-prev').addEventListener('click', () => {
@@ -348,14 +375,23 @@
         renderReports();
     });
 
+    function localDateStr(d) {
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
     function getReportRange() {
+        // Custom range mode
+        if (state.reportPeriod === 'custom') {
+            return { start: state.reportCustomStart, end: state.reportCustomEnd, label: `${state.reportCustomStart} – ${state.reportCustomEnd}` };
+        }
+
         const now = new Date();
         let start, end, label;
 
         if (state.reportPeriod === 'day') {
             const d = new Date(now);
             d.setDate(d.getDate() + state.reportOffset);
-            const ds = d.toISOString().slice(0, 10);
+            const ds = localDateStr(d);
             start = ds;
             end = ds;
             label = d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -367,15 +403,22 @@
             monday.setDate(d.getDate() - ((day + 6) % 7));
             const sunday = new Date(monday);
             sunday.setDate(monday.getDate() + 6);
-            start = monday.toISOString().slice(0, 10);
-            end = sunday.toISOString().slice(0, 10);
+            start = localDateStr(monday);
+            end = localDateStr(sunday);
             label = `KW ${getWeekNumber(monday)} – ${monday.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })} bis ${sunday.toLocaleDateString('de-DE', { day: 'numeric', month: 'short', year: 'numeric' })}`;
-        } else {
+        } else if (state.reportPeriod === 'month') {
             const d = new Date(now.getFullYear(), now.getMonth() + state.reportOffset, 1);
-            start = d.toISOString().slice(0, 10);
+            start = localDateStr(d);
             const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-            end = lastDay.toISOString().slice(0, 10);
+            end = localDateStr(lastDay);
             label = d.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+        } else if (state.reportPeriod === 'year') {
+            const year = now.getFullYear() + state.reportOffset;
+            const d = new Date(year, 0, 1);
+            const lastDay = new Date(year, 11, 31);
+            start = localDateStr(d);
+            end = localDateStr(lastDay);
+            label = String(year);
         }
         return { start, end, label };
     }
