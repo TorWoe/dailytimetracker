@@ -668,6 +668,46 @@
             .join('');
     }
 
+    $('#btn-show-all').addEventListener('click', () => {
+        const filtered = [...state.entries].sort((a, b) => {
+            if (a.date !== b.date) return b.date.localeCompare(a.date);
+            return b.start.localeCompare(a.start);
+        });
+
+        const countEl = $('#search-result-count');
+        const list = $('#search-results');
+
+        countEl.textContent = `${filtered.length} Eintr${filtered.length !== 1 ? 'äge' : 'ag'} gesamt`;
+
+        if (filtered.length === 0) {
+            list.innerHTML = '<div class="no-entries">Keine Einträge vorhanden.</div>';
+            return;
+        }
+
+        list.innerHTML = filtered
+            .map((e) => {
+                const proj = state.projects.find((p) => p.id === e.project);
+                const cat = state.categories.find((c) => c.id === e.category);
+                const tagsHtml = (e.tags || []).map((t) => `<span class="tag">${escHtml(t)}</span>`).join('');
+                const projBadge = proj ? `<span class="project-badge" style="background:${proj.color}33;color:${proj.color}">${escHtml(proj.name)}</span>` : '';
+                const catBadge = cat ? `<span class="category-badge" style="background:${cat.color}33;color:${cat.color}">${escHtml(cat.name)}</span>` : '';
+
+                return `<div class="entry-card">
+                    <div class="entry-info">
+                        <div class="entry-task">${escHtml(e.task)}</div>
+                        <div class="entry-meta">
+                            <span>${e.date}</span>
+                            <span>${e.start} – ${e.end}</span>
+                            ${projBadge}${catBadge}
+                        </div>
+                        <div style="margin-top:4px">${tagsHtml}</div>
+                    </div>
+                    <div class="entry-duration">${fmt(e.duration)}</div>
+                </div>`;
+            })
+            .join('');
+    });
+
     $('#btn-search').addEventListener('click', renderSearch);
     $('#search-text').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') renderSearch();
