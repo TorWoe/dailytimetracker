@@ -530,7 +530,7 @@ input::placeholder {
     background: var(--bg-input);
     border: 1px solid var(--border);
     color: var(--text);
-    padding: 10px 12px;
+    padding: 10px 30px 10px 12px;
     border-radius: var(--radius);
     font-size: 0.9rem;
     cursor: pointer;
@@ -538,6 +538,19 @@ input::placeholder {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    position: relative;
+}
+
+.multi-select-toggle::after {
+    content: '';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid var(--text-muted);
+    pointer-events: none;
 }
 
 .multi-select-toggle:hover {
