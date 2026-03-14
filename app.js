@@ -270,6 +270,7 @@
                     <div class="entry-duration">${fmt(e.duration)}</div>
                     <div class="entry-actions">
                         <button onclick="app.editEntry('${e.id}')">Bearbeiten</button>
+                        <button onclick="app.exportIcal('${e.id}')">iCal.</button>
                         <button onclick="app.deleteEntry('${e.id}')">Löschen</button>
                     </div>
                 </div>`;
@@ -893,6 +894,56 @@
             const entry = state.entries.find((e) => e.id === id);
             if (!entry) return;
             openEditModal(entry);
+        },
+        exportIcal(id) {
+            const entry = state.entries.find((e) => e.id === id);
+            if (!entry) return;
+
+            const proj = state.projects.find((p) => p.id === entry.project);
+            const cat = state.categories.find((c) => c.id === entry.category);
+            const datePart = entry.date.replace(/-/g, '');
+            const dtStart = datePart + 'T' + entry.start.replace(/:/g, '') + '00';
+            const dtEnd = datePart + 'T' + entry.end.replace(/:/g, '') + '00';
+            const now = new Date();
+            const dtStamp = now.getFullYear()
+                + String(now.getMonth() + 1).padStart(2, '0')
+                + String(now.getDate()).padStart(2, '0') + 'T'
+                + String(now.getHours()).padStart(2, '0')
+                + String(now.getMinutes()).padStart(2, '0')
+                + String(now.getSeconds()).padStart(2, '0');
+            const uidVal = entry.id + '@dailytimetracker';
+
+            let description = '';
+            if (proj) description += 'Projekt: ' + proj.name + '\\n';
+            if (cat) description += 'Kategorie: ' + cat.name + '\\n';
+            if (entry.tags && entry.tags.length) description += 'Tags: ' + entry.tags.join(', ') + '\\n';
+            description += 'Dauer: ' + fmt(entry.duration);
+
+            const categories = [proj ? proj.name : '', cat ? cat.name : ''].filter(Boolean).join(',');
+
+            const ics = [
+                'BEGIN:VCALENDAR',
+                'VERSION:2.0',
+                'PRODID:-//DailyTimeTracker//DE',
+                'BEGIN:VEVENT',
+                'UID:' + uidVal,
+                'DTSTAMP:' + dtStamp,
+                'DTSTART:' + dtStart,
+                'DTEND:' + dtEnd,
+                'SUMMARY:' + entry.task,
+                'DESCRIPTION:' + description,
+                categories ? 'CATEGORIES:' + categories : '',
+                'END:VEVENT',
+                'END:VCALENDAR',
+            ].filter(Boolean).join('\r\n');
+
+            const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = entry.task.replace(/[^a-zA-Z0-9äöüÄÖÜß _-]/g, '').slice(0, 50) + '_' + entry.date + '.ics';
+            a.click();
+            URL.revokeObjectURL(url);
         },
         deleteEntry(id) {
             if (!confirm('Eintrag löschen?')) return;
