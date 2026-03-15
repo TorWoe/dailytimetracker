@@ -669,6 +669,11 @@
             .join('');
     }
 
+    $('#btn-search-reset').addEventListener('click', () => {
+        location.hash = 'search';
+        location.reload();
+    });
+
     $('#btn-show-all').addEventListener('click', () => {
         const filtered = [...state.entries].sort((a, b) => {
             if (a.date !== b.date) return b.date.localeCompare(a.date);
@@ -1006,4 +1011,13 @@
     load();
     populateSelects();
     $('#filter-date').value = todayStr();
+
+    if (location.hash === '#search') {
+        location.hash = '';
+        $$('.nav-btn').forEach((b) => b.classList.remove('active'));
+        $$('.view').forEach((v) => v.classList.remove('active'));
+        $('[data-view="search"]').classList.add('active');
+        $('#search').classList.add('active');
+        initSearchMultiSelects();
+    }
 })();
