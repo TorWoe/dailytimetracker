@@ -601,7 +601,7 @@
         return Array.from(checkboxes).map((cb) => cb.value);
     }
 
-    function renderSearch() {
+    function getSearchFiltered() {
         const query = $('#search-text').value.trim().toLowerCase();
         const selectedProjects = getMultiSelectValues('search-project-select');
         const selectedCategories = getMultiSelectValues('search-category-select');
@@ -628,6 +628,12 @@
             if (a.date !== b.date) return b.date.localeCompare(a.date);
             return b.start.localeCompare(a.start);
         });
+
+        return { filtered, query, selectedProjects, selectedCategories };
+    }
+
+    function renderSearch() {
+        const { filtered, query, selectedProjects, selectedCategories } = getSearchFiltered();
 
         const countEl = $('#search-result-count');
         const list = $('#search-results');
@@ -672,6 +678,30 @@
     $('#btn-search-reset').addEventListener('click', () => {
         location.hash = 'search';
         location.reload();
+    });
+
+    $('#btn-search-export').addEventListener('click', () => {
+        const { filtered } = getSearchFiltered();
+        if (filtered.length === 0) {
+            alert('Keine Einträge zum Exportieren vorhanden.');
+            return;
+        }
+
+        const headers = ['Datum', 'Start', 'Ende', 'Dauer (Min)', 'Aufgabe', 'Projekt', 'Kategorie', 'Tags'];
+        const rows = filtered.map((e) => {
+            const proj = state.projects.find((p) => p.id === e.project);
+            const cat = state.categories.find((c) => c.id === e.category);
+            return [e.date, e.start, e.end, Math.round(e.duration / 60), `"${e.task}"`, proj ? proj.name : '', cat ? cat.name : '', (e.tags || []).join('; ')];
+        });
+
+        const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+        const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `timetracker_suche_${todayStr()}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
     });
 
     $('#btn-show-all').addEventListener('click', () => {
