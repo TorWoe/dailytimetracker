@@ -502,6 +502,12 @@ input::placeholder {
     margin-bottom: 12px;
 }
 
+.search-actions-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
 .search-filters {
     display: flex;
     gap: 10px;
