@@ -254,6 +254,7 @@
         const list = $('#entries-list');
         if (filtered.length === 0) {
             list.innerHTML = '<div class="no-entries">Keine Einträge gefunden.</div>';
+            renderEntriesCharts([]);
             return;
         }
 
@@ -284,6 +285,8 @@
                 </div>`;
             })
             .join('');
+
+        renderEntriesCharts(filtered);
     }
 
     $('#filter-date').addEventListener('change', renderEntries);
@@ -341,6 +344,9 @@
     let searchChartProjects = null;
     let searchChartCategories = null;
     let searchChartDaily = null;
+    let entriesChartProjects = null;
+    let entriesChartCategories = null;
+    let entriesChartDaily = null;
 
     function updateReportNav() {
         const isCustom = state.reportPeriod === 'custom';
@@ -544,6 +550,122 @@
         });
 
         chartDaily = new Chart($('#chart-daily'), {
+            type: 'bar',
+            data: {
+                labels: shortLabels,
+                datasets: [{
+                    data: dayLabels.map((d) => Math.round(dayMap[d] / 60)),
+                    backgroundColor: '#4a90d9',
+                    borderRadius: 4,
+                }],
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (ctx) => fmtMinToHM(ctx.raw) } },
+                },
+                scales: {
+                    x: { ticks: { color: '#8899aa' }, grid: { display: false } },
+                    y: { ticks: { color: '#8899aa' }, grid: { color: '#2a3a5e' }, title: { display: true, text: 'Minuten', color: '#8899aa' } },
+                },
+            },
+        });
+    }
+
+    function renderEntriesCharts(entries) {
+        const container = $('#entries-charts-container');
+        if (entries.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+        container.style.display = '';
+
+        // Project chart
+        const projectData = {};
+        entries.forEach((e) => {
+            const proj = state.projects.find((p) => p.id === e.project);
+            const name = proj ? proj.name : 'Ohne Projekt';
+            const color = proj ? proj.color : '#666';
+            if (!projectData[name]) projectData[name] = { seconds: 0, color };
+            projectData[name].seconds += e.duration;
+        });
+
+        if (entriesChartProjects) entriesChartProjects.destroy();
+        const projLabels = Object.keys(projectData);
+        entriesChartProjects = new Chart($('#entries-chart-projects'), {
+            type: 'doughnut',
+            data: {
+                labels: projLabels,
+                datasets: [{
+                    data: projLabels.map((l) => Math.round(projectData[l].seconds / 60)),
+                    backgroundColor: projLabels.map((l) => projectData[l].color),
+                    borderWidth: 0,
+                }],
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#eee', padding: 12 } },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtMinToHM(ctx.raw)}` } },
+                },
+            },
+        });
+
+        // Category chart
+        const catData = {};
+        entries.forEach((e) => {
+            const cat = state.categories.find((c) => c.id === e.category);
+            const name = cat ? cat.name : 'Ohne Kategorie';
+            const color = cat ? cat.color : '#666';
+            if (!catData[name]) catData[name] = { seconds: 0, color };
+            catData[name].seconds += e.duration;
+        });
+
+        if (entriesChartCategories) entriesChartCategories.destroy();
+        const catLabels = Object.keys(catData);
+        entriesChartCategories = new Chart($('#entries-chart-categories'), {
+            type: 'doughnut',
+            data: {
+                labels: catLabels,
+                datasets: [{
+                    data: catLabels.map((l) => Math.round(catData[l].seconds / 60)),
+                    backgroundColor: catLabels.map((l) => catData[l].color),
+                    borderWidth: 0,
+                }],
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#eee', padding: 12 } },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtMinToHM(ctx.raw)}` } },
+                },
+            },
+        });
+
+        // Daily bar chart – derive date range from entries
+        const dates = entries.map((e) => e.date).sort();
+        const start = dates[0];
+        const end = dates[dates.length - 1];
+        const dayMap = {};
+        const d = new Date(start);
+        const endDate = new Date(end);
+        while (d <= endDate) {
+            dayMap[d.toISOString().slice(0, 10)] = 0;
+            d.setDate(d.getDate() + 1);
+        }
+        entries.forEach((e) => {
+            if (dayMap[e.date] !== undefined) dayMap[e.date] += e.duration;
+        });
+
+        if (entriesChartDaily) entriesChartDaily.destroy();
+        const dayLabels = Object.keys(dayMap);
+        const shortLabels = dayLabels.map((d) => {
+            const dt = new Date(d + 'T00:00:00');
+            return dt.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric' });
+        });
+
+        entriesChartDaily = new Chart($('#entries-chart-daily'), {
             type: 'bar',
             data: {
                 labels: shortLabels,
