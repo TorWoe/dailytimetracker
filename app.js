@@ -66,6 +66,14 @@
         return (seconds / 3600).toFixed(1) + 'h';
     }
 
+    function fmtMinToHM(minutes) {
+        const h = Math.floor(minutes / 60);
+        const m = minutes % 60;
+        if (h > 0 && m > 0) return `${h} std ${m} min`;
+        if (h > 0) return `${h} std`;
+        return `${m} min`;
+    }
+
     function todayStr() {
         return new Date().toISOString().slice(0, 10);
     }
@@ -480,7 +488,7 @@
                 responsive: true,
                 plugins: {
                     legend: { position: 'bottom', labels: { color: '#eee', padding: 12 } },
-                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw} min` } },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtMinToHM(ctx.raw)}` } },
                 },
             },
         });
@@ -511,7 +519,7 @@
                 responsive: true,
                 plugins: {
                     legend: { position: 'bottom', labels: { color: '#eee', padding: 12 } },
-                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw} min` } },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtMinToHM(ctx.raw)}` } },
                 },
             },
         });
@@ -549,7 +557,7 @@
                 responsive: true,
                 plugins: {
                     legend: { display: false },
-                    tooltip: { callbacks: { label: (ctx) => `${ctx.raw} min` } },
+                    tooltip: { callbacks: { label: (ctx) => fmtMinToHM(ctx.raw) } },
                 },
                 scales: {
                     x: { ticks: { color: '#8899aa' }, grid: { display: false } },
@@ -593,7 +601,7 @@
                 responsive: true,
                 plugins: {
                     legend: { position: 'bottom', labels: { color: '#eee', padding: 12 } },
-                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw} min` } },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtMinToHM(ctx.raw)}` } },
                 },
             },
         });
@@ -624,7 +632,7 @@
                 responsive: true,
                 plugins: {
                     legend: { position: 'bottom', labels: { color: '#eee', padding: 12 } },
-                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw} min` } },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtMinToHM(ctx.raw)}` } },
                 },
             },
         });
@@ -665,7 +673,7 @@
                 responsive: true,
                 plugins: {
                     legend: { display: false },
-                    tooltip: { callbacks: { label: (ctx) => `${ctx.raw} min` } },
+                    tooltip: { callbacks: { label: (ctx) => fmtMinToHM(ctx.raw) } },
                 },
                 scales: {
                     x: { ticks: { color: '#8899aa' }, grid: { display: false } },
