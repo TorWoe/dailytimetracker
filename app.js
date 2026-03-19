@@ -897,14 +897,14 @@
     }
 
     function renderSearchTips(tips) {
-        const section = $('#search-tips-section');
+        const block = $('#search-tips-block');
         const countEl = $('#search-tips-count');
         const list = $('#search-tips-results');
         if (tips.length === 0) {
-            section.style.display = 'none';
+            block.style.display = 'none';
             return;
         }
-        section.style.display = '';
+        block.style.display = '';
         countEl.textContent = `${tips.length} Tipp${tips.length !== 1 ? 's' : ''} gefunden`;
         list.innerHTML = sortTips(tips).map((t) => renderTipCard(t)).join('');
     }
@@ -912,17 +912,18 @@
     function renderSearch() {
         const { filtered, query, selectedProjects, selectedCategories } = getSearchFiltered();
 
+        const entriesBlock = $('#search-entries-block');
         const countEl = $('#search-result-count');
         const list = $('#search-results');
 
         if (!query && selectedProjects.length === 0 && selectedCategories.length === 0) {
-            countEl.textContent = '';
-            list.innerHTML = '<div class="no-entries">Bitte Suchbegriff eingeben oder Filter wählen.</div>';
+            entriesBlock.style.display = 'none';
             renderSearchCharts([]);
             renderSearchTips([]);
             return;
         }
 
+        entriesBlock.style.display = '';
         countEl.textContent = `${filtered.length} Ergebnis${filtered.length !== 1 ? 'se' : ''} gefunden`;
 
         if (filtered.length === 0) {
@@ -992,6 +993,8 @@
             return b.start.localeCompare(a.start);
         });
 
+        const entriesBlock = $('#search-entries-block');
+        entriesBlock.style.display = '';
         const countEl = $('#search-result-count');
         const list = $('#search-results');
 
@@ -1000,6 +1003,7 @@
         if (filtered.length === 0) {
             list.innerHTML = '<div class="no-entries">Keine Einträge vorhanden.</div>';
             renderSearchCharts([]);
+            renderSearchTips([]);
             return;
         }
 
@@ -1057,10 +1061,10 @@
 
     function renderTipCard(t) {
         const tagsHtml = (t.tags || []).map((tag) => `<span class="tag">${escHtml(tag)}</span>`).join('');
-        const numBadge = (t.number !== null && t.number !== undefined && t.number !== '') ? `<span class="tip-number">#${escHtml(String(t.number))}</span>` : '';
+        const numBadge = (t.number !== null && t.number !== undefined && t.number !== '') ? `<span class="tip-number">${escHtml(String(t.number))}</span>` : '';
         return `<div class="entry-card tip-card">
             <div class="entry-info">
-                <div class="entry-task">${numBadge}${escHtml(t.title)}</div>
+                <div class="entry-task">${escHtml(t.title)}${numBadge}</div>
                 <div class="tip-text">${escHtml(t.text)}</div>
                 <div style="margin-top:4px">${tagsHtml}</div>
             </div>
