@@ -1031,7 +1031,7 @@
             .join('');
 
         renderSearchCharts(filtered);
-        renderSearchTips([]);
+        renderSearchTips(state.tips);
     });
 
     $('#btn-search').addEventListener('click', renderSearch);
