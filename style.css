@@ -207,6 +207,7 @@ nav {
 input[type="text"],
 input[type="time"],
 input[type="date"],
+input[type="number"],
 select {
     background: var(--bg-input);
     border: 1px solid var(--border);
