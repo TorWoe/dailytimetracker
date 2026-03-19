@@ -15,6 +15,7 @@
                 <button class="nav-btn" data-view="entries">Einträge</button>
                 <button class="nav-btn" data-view="reports">Berichte</button>
                 <button class="nav-btn" data-view="search">Suche</button>
+                <button class="nav-btn" data-view="tips">Tipps</button>
                 <button class="nav-btn" data-view="settings">Einstellungen</button>
             </nav>
         </header>
@@ -170,11 +171,34 @@
                     <canvas id="search-chart-daily"></canvas>
                 </div>
             </div>
+            <div class="search-tips-section" id="search-tips-section" style="display:none;margin-top:24px;">
+                <h3>Gefundene Tipps</h3>
+                <div class="search-tips-count" id="search-tips-count"></div>
+                <div class="tips-list" id="search-tips-results"></div>
+            </div>
+        </section>
+
+        <!-- Tips View -->
+        <section id="tips" class="view">
+            <div class="tips-header">
+                <h2>Tipps</h2>
+                <div class="tips-actions-row">
+                    <button id="btn-tips-export" class="btn btn-secondary">CSV Export</button>
+                </div>
+            </div>
+            <div class="tips-list" id="tips-list"></div>
         </section>
 
         <!-- Settings View -->
         <section id="settings" class="view">
             <h2>Einstellungen</h2>
+            <div class="settings-section">
+                <h3>Daten</h3>
+                <button id="btn-export-all" class="btn btn-secondary">Alle Daten exportieren (JSON)</button>
+                <button id="btn-import" class="btn btn-secondary">Daten importieren</button>
+                <input type="file" id="import-file" accept=".json" hidden>
+                <button id="btn-clear-data" class="btn btn-danger">Alle Daten löschen</button>
+            </div>
             <div class="settings-section">
                 <h3>Projekte</h3>
                 <div class="settings-list" id="project-list"></div>
@@ -194,11 +218,14 @@
                 </div>
             </div>
             <div class="settings-section">
-                <h3>Daten</h3>
-                <button id="btn-export-all" class="btn btn-secondary">Alle Daten exportieren (JSON)</button>
-                <button id="btn-import" class="btn btn-secondary">Daten importieren</button>
-                <input type="file" id="import-file" accept=".json" hidden>
-                <button id="btn-clear-data" class="btn btn-danger">Alle Daten löschen</button>
+                <h3>Neuer Tipp</h3>
+                <div class="tip-form">
+                    <input type="text" id="tip-title" placeholder="Überschrift...">
+                    <input type="text" id="tip-number" placeholder="Nummer (optional)" style="max-width:180px;">
+                    <input type="text" id="tip-tags" placeholder="Tags (kommagetrennt)">
+                    <textarea id="tip-text" placeholder="Text..." rows="3"></textarea>
+                    <button id="btn-add-tip" class="btn btn-primary">Tipp hinzufügen</button>
+                </div>
             </div>
         </section>
     </div>
@@ -225,6 +252,23 @@
             <div class="modal-actions">
                 <button class="btn btn-primary" id="edit-save">Speichern</button>
                 <button class="btn btn-secondary" id="edit-cancel">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Tip Modal -->
+    <div class="modal-overlay" id="edit-tip-modal" hidden>
+        <div class="modal">
+            <h3>Tipp bearbeiten</h3>
+            <div class="modal-form">
+                <label>Überschrift<input type="text" id="edit-tip-title"></label>
+                <label>Nummer (optional)<input type="text" id="edit-tip-number" style="max-width:180px;"></label>
+                <label>Tags<input type="text" id="edit-tip-tags" placeholder="kommagetrennt"></label>
+                <label>Text<textarea id="edit-tip-text" rows="4"></textarea></label>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" id="edit-tip-save">Speichern</button>
+                <button class="btn btn-secondary" id="edit-tip-cancel">Abbrechen</button>
             </div>
         </div>
     </div>

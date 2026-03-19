@@ -612,6 +612,105 @@ input::placeholder {
     flex-shrink: 0;
 }
 
+/* Tips */
+.tips-header {
+    margin-bottom: 20px;
+}
+
+.tips-header h2 {
+    margin-bottom: 12px;
+}
+
+.tips-actions-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+}
+
+.tips-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tip-card .tip-text {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    white-space: pre-wrap;
+}
+
+.tip-number {
+    display: inline-block;
+    background: var(--primary);
+    color: #fff;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.tip-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.tip-form textarea {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: vertical;
+}
+
+.tip-form textarea:focus {
+    border-color: var(--primary);
+}
+
+.search-tips-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+}
+
+.search-tips-section h3 {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.search-tips-count {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+/* Modal textarea */
+.modal-form textarea {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: vertical;
+}
+
+.modal-form textarea:focus {
+    border-color: var(--primary);
+}
+
 /* Settings */
 .settings-section {
     background: var(--bg-card);

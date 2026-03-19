@@ -6,6 +6,7 @@
         entries: [],
         projects: [],
         categories: [],
+        tips: [],
         timer: { running: false, paused: false, startTime: null, elapsed: 0, interval: null },
         reportPeriod: 'day',
         reportOffset: 0,
@@ -18,6 +19,7 @@
         localStorage.setItem('dtt_entries', JSON.stringify(state.entries));
         localStorage.setItem('dtt_projects', JSON.stringify(state.projects));
         localStorage.setItem('dtt_categories', JSON.stringify(state.categories));
+        localStorage.setItem('dtt_tips', JSON.stringify(state.tips));
     }
 
     function load() {
@@ -25,10 +27,12 @@
             state.entries = JSON.parse(localStorage.getItem('dtt_entries')) || [];
             state.projects = JSON.parse(localStorage.getItem('dtt_projects')) || [];
             state.categories = JSON.parse(localStorage.getItem('dtt_categories')) || [];
+            state.tips = JSON.parse(localStorage.getItem('dtt_tips')) || [];
         } catch {
             state.entries = [];
             state.projects = [];
             state.categories = [];
+            state.tips = [];
         }
         if (state.projects.length === 0) {
             state.projects = [
@@ -98,6 +102,7 @@
             if (btn.dataset.view === 'entries') renderEntries();
             if (btn.dataset.view === 'reports') renderReports();
             if (btn.dataset.view === 'search') initSearchMultiSelects();
+            if (btn.dataset.view === 'tips') renderTips();
             if (btn.dataset.view === 'settings') renderSettings();
         });
     });
@@ -881,6 +886,29 @@
         return { filtered, query, selectedProjects, selectedCategories };
     }
 
+    function getSearchFilteredTips(query) {
+        if (!query) return [];
+        return state.tips.filter((t) => {
+            const titleMatch = t.title.toLowerCase().includes(query);
+            const textMatch = t.text.toLowerCase().includes(query);
+            const tagMatch = (t.tags || []).some((tag) => tag.toLowerCase().includes(query));
+            return titleMatch || textMatch || tagMatch;
+        });
+    }
+
+    function renderSearchTips(tips) {
+        const section = $('#search-tips-section');
+        const countEl = $('#search-tips-count');
+        const list = $('#search-tips-results');
+        if (tips.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+        section.style.display = '';
+        countEl.textContent = `${tips.length} Tipp${tips.length !== 1 ? 's' : ''} gefunden`;
+        list.innerHTML = sortTips(tips).map((t) => renderTipCard(t)).join('');
+    }
+
     function renderSearch() {
         const { filtered, query, selectedProjects, selectedCategories } = getSearchFiltered();
 
@@ -891,6 +919,7 @@
             countEl.textContent = '';
             list.innerHTML = '<div class="no-entries">Bitte Suchbegriff eingeben oder Filter wählen.</div>';
             renderSearchCharts([]);
+            renderSearchTips([]);
             return;
         }
 
@@ -898,34 +927,34 @@
 
         if (filtered.length === 0) {
             list.innerHTML = '<div class="no-entries">Keine Einträge gefunden.</div>';
-            renderSearchCharts([]);
-            return;
+        } else {
+            list.innerHTML = filtered
+                .map((e) => {
+                    const proj = state.projects.find((p) => p.id === e.project);
+                    const cat = state.categories.find((c) => c.id === e.category);
+                    const tagsHtml = (e.tags || []).map((t) => `<span class="tag">${escHtml(t)}</span>`).join('');
+                    const projBadge = proj ? `<span class="project-badge" style="background:${proj.color}33;color:${proj.color}">${escHtml(proj.name)}</span>` : '';
+                    const catBadge = cat ? `<span class="category-badge" style="background:${cat.color}33;color:${cat.color}">${escHtml(cat.name)}</span>` : '';
+
+                    return `<div class="entry-card">
+                        <div class="entry-info">
+                            <div class="entry-task">${escHtml(e.task)}</div>
+                            <div class="entry-meta">
+                                <span>${e.date}</span>
+                                <span>${e.start} – ${e.end}</span>
+                                ${projBadge}${catBadge}
+                            </div>
+                            <div style="margin-top:4px">${tagsHtml}</div>
+                        </div>
+                        <div class="entry-duration">${fmt(e.duration)}</div>
+                    </div>`;
+                })
+                .join('');
         }
 
-        list.innerHTML = filtered
-            .map((e) => {
-                const proj = state.projects.find((p) => p.id === e.project);
-                const cat = state.categories.find((c) => c.id === e.category);
-                const tagsHtml = (e.tags || []).map((t) => `<span class="tag">${escHtml(t)}</span>`).join('');
-                const projBadge = proj ? `<span class="project-badge" style="background:${proj.color}33;color:${proj.color}">${escHtml(proj.name)}</span>` : '';
-                const catBadge = cat ? `<span class="category-badge" style="background:${cat.color}33;color:${cat.color}">${escHtml(cat.name)}</span>` : '';
-
-                return `<div class="entry-card">
-                    <div class="entry-info">
-                        <div class="entry-task">${escHtml(e.task)}</div>
-                        <div class="entry-meta">
-                            <span>${e.date}</span>
-                            <span>${e.start} – ${e.end}</span>
-                            ${projBadge}${catBadge}
-                        </div>
-                        <div style="margin-top:4px">${tagsHtml}</div>
-                    </div>
-                    <div class="entry-duration">${fmt(e.duration)}</div>
-                </div>`;
-            })
-            .join('');
-
         renderSearchCharts(filtered);
+        const filteredTips = getSearchFilteredTips(query);
+        renderSearchTips(filteredTips);
     }
 
     $('#btn-search-reset').addEventListener('click', () => {
@@ -998,6 +1027,7 @@
             .join('');
 
         renderSearchCharts(filtered);
+        renderSearchTips([]);
     });
 
     $('#btn-search').addEventListener('click', renderSearch);
@@ -1007,6 +1037,127 @@
 
     document.addEventListener('click', () => {
         $$('.multi-select-dropdown').forEach((d) => d.classList.remove('open'));
+    });
+
+    // ── Tips ──
+    function sortTips(tips) {
+        return [...tips].sort((a, b) => {
+            const aHasNum = a.number !== null && a.number !== undefined && a.number !== '';
+            const bHasNum = b.number !== null && b.number !== undefined && b.number !== '';
+            if (aHasNum && !bHasNum) return -1;
+            if (!aHasNum && bHasNum) return 1;
+            if (aHasNum && bHasNum) {
+                const numA = Number(a.number);
+                const numB = Number(b.number);
+                if (numA !== numB) return numA - numB;
+            }
+            return b.timestamp.localeCompare(a.timestamp);
+        });
+    }
+
+    function renderTipCard(t) {
+        const tagsHtml = (t.tags || []).map((tag) => `<span class="tag">${escHtml(tag)}</span>`).join('');
+        const numBadge = (t.number !== null && t.number !== undefined && t.number !== '') ? `<span class="tip-number">#${escHtml(String(t.number))}</span>` : '';
+        return `<div class="entry-card tip-card">
+            <div class="entry-info">
+                <div class="entry-task">${numBadge}${escHtml(t.title)}</div>
+                <div class="tip-text">${escHtml(t.text)}</div>
+                <div style="margin-top:4px">${tagsHtml}</div>
+            </div>
+            <div class="entry-actions">
+                <button onclick="app.editTip('${t.id}')">Bearbeiten</button>
+                <button onclick="app.deleteTip('${t.id}')">Löschen</button>
+            </div>
+        </div>`;
+    }
+
+    function renderTips() {
+        const list = $('#tips-list');
+        if (state.tips.length === 0) {
+            list.innerHTML = '<div class="no-entries">Keine Tipps vorhanden.</div>';
+            return;
+        }
+        const sorted = sortTips(state.tips);
+        list.innerHTML = sorted.map((t) => renderTipCard(t)).join('');
+    }
+
+    $('#btn-add-tip').addEventListener('click', () => {
+        const title = $('#tip-title').value.trim();
+        if (!title) {
+            alert('Bitte eine Überschrift eingeben.');
+            return;
+        }
+        const numberVal = $('#tip-number').value.trim();
+        const tip = {
+            id: uid(),
+            title: title,
+            number: numberVal !== '' ? Number(numberVal) : null,
+            tags: $('#tip-tags').value.split(',').map((t) => t.trim()).filter(Boolean),
+            text: $('#tip-text').value.trim(),
+            timestamp: new Date().toISOString(),
+        };
+        state.tips.push(tip);
+        save();
+        $('#tip-title').value = '';
+        $('#tip-number').value = '';
+        $('#tip-tags').value = '';
+        $('#tip-text').value = '';
+    });
+
+    // Tips CSV Export
+    $('#btn-tips-export').addEventListener('click', () => {
+        if (state.tips.length === 0) {
+            alert('Keine Tipps zum Exportieren vorhanden.');
+            return;
+        }
+        const sorted = sortTips(state.tips);
+        const headers = ['Nummer', 'Überschrift', 'Text', 'Tags'];
+        const rows = sorted.map((t) => {
+            const num = (t.number !== null && t.number !== undefined && t.number !== '') ? t.number : '';
+            return [num, `"${t.title}"`, `"${t.text.replace(/"/g, '""')}"`, (t.tags || []).join('; ')];
+        });
+        const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+        const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `timetracker_tipps_${todayStr()}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+
+    // Edit Tip Modal
+    let editingTipId = null;
+
+    $('#edit-tip-save').addEventListener('click', () => {
+        const title = $('#edit-tip-title').value.trim();
+        if (!title) {
+            alert('Bitte eine Überschrift eingeben.');
+            return;
+        }
+        const tip = state.tips.find((t) => t.id === editingTipId);
+        if (!tip) return;
+        const numberVal = $('#edit-tip-number').value.trim();
+        tip.title = title;
+        tip.number = numberVal !== '' ? Number(numberVal) : null;
+        tip.tags = $('#edit-tip-tags').value.split(',').map((t) => t.trim()).filter(Boolean);
+        tip.text = $('#edit-tip-text').value.trim();
+        save();
+        $('#edit-tip-modal').hidden = true;
+        editingTipId = null;
+        renderTips();
+    });
+
+    $('#edit-tip-cancel').addEventListener('click', () => {
+        $('#edit-tip-modal').hidden = true;
+        editingTipId = null;
+    });
+
+    $('#edit-tip-modal').addEventListener('click', (e) => {
+        if (e.target === $('#edit-tip-modal')) {
+            $('#edit-tip-modal').hidden = true;
+            editingTipId = null;
+        }
     });
 
     // ── Settings ──
@@ -1056,7 +1207,7 @@
 
     // ── Data Management ──
     $('#btn-export-all').addEventListener('click', () => {
-        const data = { entries: state.entries, projects: state.projects, categories: state.categories };
+        const data = { entries: state.entries, projects: state.projects, categories: state.categories, tips: state.tips };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -1078,6 +1229,7 @@
                 if (data.entries) state.entries = data.entries;
                 if (data.projects) state.projects = data.projects;
                 if (data.categories) state.categories = data.categories;
+                if (data.tips) state.tips = data.tips;
                 save();
                 populateSelects();
                 alert('Daten erfolgreich importiert!');
@@ -1290,6 +1442,22 @@
         },
         cancelEdit() {
             renderSettings();
+        },
+        editTip(id) {
+            const tip = state.tips.find((t) => t.id === id);
+            if (!tip) return;
+            editingTipId = tip.id;
+            $('#edit-tip-title').value = tip.title;
+            $('#edit-tip-number').value = (tip.number !== null && tip.number !== undefined) ? tip.number : '';
+            $('#edit-tip-tags').value = (tip.tags || []).join(', ');
+            $('#edit-tip-text').value = tip.text;
+            $('#edit-tip-modal').hidden = false;
+        },
+        deleteTip(id) {
+            if (!confirm('Tipp löschen?')) return;
+            state.tips = state.tips.filter((t) => t.id !== id);
+            save();
+            renderTips();
         },
     };
 
