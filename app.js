@@ -82,6 +82,13 @@
         return new Date().toISOString().slice(0, 10);
     }
 
+    function nowStr() {
+        const d = new Date();
+        const date = d.toISOString().slice(0, 10);
+        const time = d.toTimeString().slice(0, 8).replace(/:/g, '-');
+        return `${date}_${time}`;
+    }
+
     function escHtml(str) {
         const div = document.createElement('div');
         div.textContent = str;
@@ -337,7 +344,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `timetracker_export_${todayStr()}.csv`;
+        a.download = `timetracker_export_${nowStr()}.csv`;
         a.click();
         URL.revokeObjectURL(url);
     });
@@ -982,7 +989,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `timetracker_suche_${todayStr()}.csv`;
+        a.download = `timetracker_suche_${nowStr()}.csv`;
         a.click();
         URL.revokeObjectURL(url);
     });
@@ -1125,7 +1132,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `timetracker_tipps_${todayStr()}.csv`;
+        a.download = `timetracker_tipps_${nowStr()}.csv`;
         a.click();
         URL.revokeObjectURL(url);
     });
@@ -1216,7 +1223,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `timetracker_backup_${todayStr()}.json`;
+        a.download = `timetracker_backup_${nowStr()}.json`;
         a.click();
         URL.revokeObjectURL(url);
     });
