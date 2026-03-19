@@ -648,7 +648,7 @@ input::placeholder {
     border-radius: 10px;
     font-size: 0.75rem;
     font-weight: 600;
-    margin-right: 8px;
+    margin-left: 8px;
 }
 
 .tip-form {
@@ -674,17 +674,12 @@ input::placeholder {
     border-color: var(--primary);
 }
 
-.search-tips-section {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-}
-
-.search-tips-section h3 {
-    font-size: 0.95rem;
-    color: var(--text-muted);
-    margin-bottom: 8px;
+.search-block-title {
+    font-size: 1.1rem;
+    color: var(--primary);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
 }
 
 .search-tips-count {

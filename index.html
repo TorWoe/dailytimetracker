@@ -155,24 +155,27 @@
                     <button id="btn-search-export" class="btn btn-secondary">CSV Export</button>
                 </div>
             </div>
-            <div class="search-result-count" id="search-result-count"></div>
-            <div class="entries-list" id="search-results"></div>
-            <div class="charts-container" id="search-charts-container" style="display:none;margin-top:24px;">
-                <div class="chart-box">
-                    <h3>Zeit pro Projekt</h3>
-                    <canvas id="search-chart-projects"></canvas>
-                </div>
-                <div class="chart-box">
-                    <h3>Zeit pro Kategorie</h3>
-                    <canvas id="search-chart-categories"></canvas>
-                </div>
-                <div class="chart-box">
-                    <h3>Tagesverlauf</h3>
-                    <canvas id="search-chart-daily"></canvas>
+            <div class="search-block" id="search-entries-block" style="display:none;margin-top:16px;">
+                <h3 class="search-block-title">Einträge</h3>
+                <div class="search-result-count" id="search-result-count"></div>
+                <div class="entries-list" id="search-results"></div>
+                <div class="charts-container" id="search-charts-container" style="display:none;margin-top:24px;">
+                    <div class="chart-box">
+                        <h3>Zeit pro Projekt</h3>
+                        <canvas id="search-chart-projects"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <h3>Zeit pro Kategorie</h3>
+                        <canvas id="search-chart-categories"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <h3>Tagesverlauf</h3>
+                        <canvas id="search-chart-daily"></canvas>
+                    </div>
                 </div>
             </div>
-            <div class="search-tips-section" id="search-tips-section" style="display:none;margin-top:24px;">
-                <h3>Gefundene Tipps</h3>
+            <div class="search-block" id="search-tips-block" style="display:none;margin-top:24px;">
+                <h3 class="search-block-title">Tipps</h3>
                 <div class="search-tips-count" id="search-tips-count"></div>
                 <div class="tips-list" id="search-tips-results"></div>
             </div>
@@ -221,7 +224,7 @@
                 <h3>Neuer Tipp</h3>
                 <div class="tip-form">
                     <input type="text" id="tip-title" placeholder="Überschrift...">
-                    <input type="text" id="tip-number" placeholder="Nummer (optional)" style="max-width:180px;">
+                    <input type="number" id="tip-number" placeholder="Nummer (optional)" min="0" style="max-width:180px;">
                     <input type="text" id="tip-tags" placeholder="Tags (kommagetrennt)">
                     <textarea id="tip-text" placeholder="Text..." rows="3"></textarea>
                     <button id="btn-add-tip" class="btn btn-primary">Tipp hinzufügen</button>
@@ -262,7 +265,7 @@
             <h3>Tipp bearbeiten</h3>
             <div class="modal-form">
                 <label>Überschrift<input type="text" id="edit-tip-title"></label>
-                <label>Nummer (optional)<input type="text" id="edit-tip-number" style="max-width:180px;"></label>
+                <label>Nummer (optional)<input type="number" id="edit-tip-number" min="0" style="max-width:180px;"></label>
                 <label>Tags<input type="text" id="edit-tip-tags" placeholder="kommagetrennt"></label>
                 <label>Text<textarea id="edit-tip-text" rows="4"></textarea></label>
             </div>
