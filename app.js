@@ -970,6 +970,11 @@
         location.reload();
     });
 
+    $('#btn-timer-reset').addEventListener('click', () => {
+        location.hash = 'timer';
+        location.reload();
+    });
+
     $('#btn-search-export').addEventListener('click', () => {
         const { filtered } = getSearchFiltered();
         if (filtered.length === 0) {
