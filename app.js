@@ -321,6 +321,18 @@
         renderEntries();
     });
 
+    $('#btn-entries-show-all').addEventListener('click', () => {
+        $('#filter-date').value = '';
+        $('#filter-project').value = '';
+        $('#filter-category').value = '';
+        renderEntries();
+    });
+
+    $('#btn-entries-reset').addEventListener('click', () => {
+        location.hash = 'entries';
+        location.reload();
+    });
+
     // ── CSV Export ──
     $('#btn-export').addEventListener('click', () => {
         const filterDate = $('#filter-date').value;

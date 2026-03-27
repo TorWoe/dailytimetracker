@@ -285,6 +285,14 @@ input::placeholder {
     align-items: center;
 }
 
+.entries-actions-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 8px;
+}
+
 .entries-filters select {
     flex: 1;
     min-width: 140px;
