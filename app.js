@@ -1512,7 +1512,7 @@
         location.hash = '';
         $$('.nav-btn').forEach((b) => b.classList.remove('active'));
         $$('.view').forEach((v) => v.classList.remove('active'));
-        $('[data-view="timer"]').classList.add('active');
-        $('#timer').classList.add('active');
+        $('[data-view="tracker"]').classList.add('active');
+        $('#tracker').classList.add('active');
     }
 })();
