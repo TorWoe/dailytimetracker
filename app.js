@@ -983,8 +983,7 @@
     });
 
     $('#btn-timer-reset').addEventListener('click', () => {
-        window.location.href = window.location.pathname + '#timer';
-        window.location.reload();
+        window.location.href = window.location.pathname;
     });
 
     $('#btn-search-export').addEventListener('click', () => {
@@ -1508,11 +1507,5 @@
         $('[data-view="entries"]').classList.add('active');
         $('#entries').classList.add('active');
         renderEntries();
-    } else if (location.hash === '#timer') {
-        location.hash = '';
-        $$('.nav-btn').forEach((b) => b.classList.remove('active'));
-        $$('.view').forEach((v) => v.classList.remove('active'));
-        $('[data-view="tracker"]').classList.add('active');
-        $('#tracker').classList.add('active');
     }
 })();
