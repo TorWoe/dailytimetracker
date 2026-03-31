@@ -417,6 +417,11 @@
         renderReports();
     });
 
+    $('#btn-report-reset').addEventListener('click', () => {
+        window.location.href = window.location.pathname + '#reports';
+        window.location.reload();
+    });
+
     function localDateStr(d) {
         return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     }
@@ -1507,5 +1512,17 @@
         $('[data-view="entries"]').classList.add('active');
         $('#entries').classList.add('active');
         renderEntries();
+    } else if (location.hash === '#reports') {
+        location.hash = '';
+        $$('.nav-btn').forEach((b) => b.classList.remove('active'));
+        $$('.view').forEach((v) => v.classList.remove('active'));
+        $('[data-view="reports"]').classList.add('active');
+        $('#reports').classList.add('active');
+        state.reportPeriod = 'day';
+        state.reportOffset = 0;
+        $$('.report-tab').forEach((t) => t.classList.remove('active'));
+        $('[data-period="day"]').classList.add('active');
+        updateReportNav();
+        renderReports();
     }
 })();
