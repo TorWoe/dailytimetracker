@@ -329,8 +329,8 @@
     });
 
     $('#btn-entries-reset').addEventListener('click', () => {
-        location.hash = 'entries';
-        location.reload();
+        window.location.href = window.location.pathname + '#entries';
+        window.location.reload();
     });
 
     // ── CSV Export ──
@@ -978,13 +978,13 @@
     }
 
     $('#btn-search-reset').addEventListener('click', () => {
-        location.hash = 'search';
-        location.reload();
+        window.location.href = window.location.pathname + '#search';
+        window.location.reload();
     });
 
     $('#btn-timer-reset').addEventListener('click', () => {
-        location.hash = 'timer';
-        location.reload();
+        window.location.href = window.location.pathname + '#timer';
+        window.location.reload();
     });
 
     $('#btn-search-export').addEventListener('click', () => {
