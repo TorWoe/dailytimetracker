@@ -869,7 +869,11 @@
         });
     }
 
+    let searchMultiSelectsInitialized = false;
+
     function initSearchMultiSelects() {
+        if (searchMultiSelectsInitialized) return;
+        searchMultiSelectsInitialized = true;
         populateMultiSelect('search-project-select', state.projects, 'Alle Projekte');
         populateMultiSelect('search-category-select', state.categories, 'Alle Kategorien');
     }
