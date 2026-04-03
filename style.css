@@ -1238,8 +1238,13 @@ section.view.active::before {
 .manual-time-row,
 .modal-time-row {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
+}
+
+.manual-time-row label:nth-child(3),
+.modal-time-row label:nth-child(3) {
+    grid-column: 1 / -1;
 }
 
 .manual-time-row label,
@@ -1293,15 +1298,15 @@ section.view.active::before {
 }
 
 .btn-pause {
-    background: linear-gradient(180deg, #fff2d7, #f6dfa5);
-    border: 1px solid rgba(199, 134, 33, 0.18);
-    color: #714d10;
+    background: linear-gradient(180deg, #ffd878, #efb93f);
+    border: 1px solid rgba(184, 125, 20, 0.24);
+    color: #6b4300;
 }
 
 .btn-stop,
 .btn-danger {
-    background: linear-gradient(180deg, #ef6767, #d14343);
-    box-shadow: 0 14px 24px rgba(209, 67, 67, 0.18);
+    background: linear-gradient(180deg, #f26d6d, #d93f3f);
+    box-shadow: 0 14px 24px rgba(217, 63, 63, 0.24);
 }
 
 .btn-secondary,
