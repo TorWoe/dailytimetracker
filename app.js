@@ -1002,9 +1002,12 @@
         window.location.reload();
     });
 
-    $('#btn-timer-reset').addEventListener('click', () => {
+    function resetTimerView() {
         window.location.href = window.location.pathname;
-    });
+    }
+
+    $('#btn-timer-reset').addEventListener('click', resetTimerView);
+    $('#btn-timer-reset-secondary').addEventListener('click', resetTimerView);
 
     $('#btn-search-export').addEventListener('click', () => {
         const { filtered } = getSearchFiltered();
