@@ -345,6 +345,11 @@
         renderEntries();
     });
 
+    $('#btn-entries-reset').addEventListener('click', () => {
+        window.location.href = window.location.pathname + '#entries';
+        window.location.reload();
+    });
+
     // ── CSV Export ──
     $('#btn-export').addEventListener('click', () => {
         const filterDate = $('#filter-date').value;
@@ -427,6 +432,11 @@
     $('#report-next').addEventListener('click', () => {
         state.reportOffset++;
         renderReports();
+    });
+
+    $('#btn-report-reset').addEventListener('click', () => {
+        window.location.href = window.location.pathname + '#reports';
+        window.location.reload();
     });
 
     function localDateStr(d) {
@@ -1070,6 +1080,11 @@
     $('#btn-search').addEventListener('click', renderSearch);
     $('#search-text').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') renderSearch();
+    });
+
+    $('#btn-search-reset').addEventListener('click', () => {
+        window.location.href = window.location.pathname + '#search';
+        window.location.reload();
     });
 
     document.addEventListener('click', () => {

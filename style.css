@@ -1127,6 +1127,7 @@ section.view.active::before {
 #tracker:not(.active) .timer-controls,
 #tracker:not(.active) .timer-form,
 #tracker:not(.active) .manual-entry,
+#tracker:not(.active) #btn-timer-reset-secondary,
 #tracker:not(.active) #btn-timer-reset {
     display: none !important;
 }
