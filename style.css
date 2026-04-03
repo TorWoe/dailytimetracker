@@ -1264,6 +1264,12 @@ section.view.active::before {
     justify-self: center;
 }
 
+.timer-reset-secondary {
+    grid-column: 2;
+    justify-self: center;
+    align-self: start;
+}
+
 .btn {
     min-height: 48px;
     padding: 0 18px;
@@ -1657,6 +1663,7 @@ textarea:focus,
     .timer-controls,
     .timer-form,
     .manual-entry,
+    .timer-reset-secondary,
     #btn-timer-reset {
         grid-column: auto;
         grid-row: auto;
