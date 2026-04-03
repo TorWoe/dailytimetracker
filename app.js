@@ -78,6 +78,21 @@
         return `${m} min`;
     }
 
+    function renderSummaryCards(targetSel, entries) {
+        const el = $(targetSel);
+        if (!el) return;
+
+        const totalSeconds = entries.reduce((sum, entry) => sum + entry.duration, 0);
+        const uniqueDays = new Set(entries.map((entry) => entry.date)).size;
+
+        el.innerHTML = `
+            <div class="summary-card"><div class="label">Gesamtzeit</div><div class="value">${fmt(totalSeconds)}</div></div>
+            <div class="summary-card"><div class="label">Einträge</div><div class="value">${entries.length}</div></div>
+            <div class="summary-card"><div class="label">Aktive Tage</div><div class="value">${uniqueDays}</div></div>
+            <div class="summary-card"><div class="label">Ø pro Tag</div><div class="value">${uniqueDays ? fmtDecimal(totalSeconds / uniqueDays) : '0.0h'}</div></div>
+        `;
+    }
+
     function todayStr() {
         return new Date().toISOString().slice(0, 10);
     }
@@ -266,6 +281,7 @@
         const list = $('#entries-list');
         if (filtered.length === 0) {
             list.innerHTML = '<div class="no-entries">Keine Einträge gefunden.</div>';
+            renderSummaryCards('#entries-summary', []);
             renderEntriesCharts([]);
             return;
         }
@@ -298,6 +314,7 @@
             })
             .join('');
 
+        renderSummaryCards('#entries-summary', filtered);
         renderEntriesCharts(filtered);
     }
 
@@ -483,16 +500,7 @@
         $('#report-date-label').textContent = label;
 
         const entries = state.entries.filter((e) => e.date >= start && e.date <= end);
-        const totalSeconds = entries.reduce((sum, e) => sum + e.duration, 0);
-        const uniqueDays = new Set(entries.map((e) => e.date)).size;
-
-        $('#report-summary').innerHTML = `
-            <div class="summary-card"><div class="label">Gesamtzeit</div><div class="value">${fmt(totalSeconds)}</div></div>
-            <div class="summary-card"><div class="label">Einträge</div><div class="value">${entries.length}</div></div>
-            <div class="summary-card"><div class="label">Aktive Tage</div><div class="value">${uniqueDays}</div></div>
-            <div class="summary-card"><div class="label">Ø pro Tag</div><div class="value">${uniqueDays ? fmtDecimal(totalSeconds / uniqueDays) : '0.0h'}</div></div>
-        `;
-
+        renderSummaryCards('#report-summary', entries);
         renderCharts(entries, start, end);
     }
 
@@ -522,7 +530,7 @@
             options: {
                 responsive: true,
                 plugins: {
-                    legend: { position: 'bottom', labels: { color: '#eee', padding: 12 } },
+                    legend: { position: 'bottom', labels: { color: '#000', padding: 12 } },
                     tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtMinToHM(ctx.raw)}` } },
                 },
             },
@@ -553,7 +561,7 @@
             options: {
                 responsive: true,
                 plugins: {
-                    legend: { position: 'bottom', labels: { color: '#eee', padding: 12 } },
+                    legend: { position: 'bottom', labels: { color: '#000', padding: 12 } },
                     tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtMinToHM(ctx.raw)}` } },
                 },
             },
@@ -635,7 +643,7 @@
             options: {
                 responsive: true,
                 plugins: {
-                    legend: { position: 'bottom', labels: { color: '#eee', padding: 12 } },
+                    legend: { position: 'bottom', labels: { color: '#000', padding: 12 } },
                     tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtMinToHM(ctx.raw)}` } },
                 },
             },
@@ -666,7 +674,7 @@
             options: {
                 responsive: true,
                 plugins: {
-                    legend: { position: 'bottom', labels: { color: '#eee', padding: 12 } },
+                    legend: { position: 'bottom', labels: { color: '#000', padding: 12 } },
                     tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtMinToHM(ctx.raw)}` } },
                 },
             },
@@ -751,7 +759,7 @@
             options: {
                 responsive: true,
                 plugins: {
-                    legend: { position: 'bottom', labels: { color: '#eee', padding: 12 } },
+                    legend: { position: 'bottom', labels: { color: '#000', padding: 12 } },
                     tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtMinToHM(ctx.raw)}` } },
                 },
             },
@@ -782,7 +790,7 @@
             options: {
                 responsive: true,
                 plugins: {
-                    legend: { position: 'bottom', labels: { color: '#eee', padding: 12 } },
+                    legend: { position: 'bottom', labels: { color: '#000', padding: 12 } },
                     tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtMinToHM(ctx.raw)}` } },
                 },
             },
@@ -946,6 +954,7 @@
 
         if (!query && selectedProjects.length === 0 && selectedCategories.length === 0) {
             entriesBlock.style.display = 'none';
+            renderSummaryCards('#search-summary', []);
             renderSearchCharts([]);
             renderSearchTips([]);
             return;
@@ -956,6 +965,7 @@
 
         if (filtered.length === 0) {
             list.innerHTML = '<div class="no-entries">Keine Einträge gefunden.</div>';
+            renderSummaryCards('#search-summary', []);
         } else {
             list.innerHTML = filtered
                 .map((e) => {
@@ -976,9 +986,10 @@
                             <div style="margin-top:4px">${tagsHtml}</div>
                         </div>
                         <div class="entry-duration">${fmt(e.duration)}</div>
-                    </div>`;
-                })
-                .join('');
+                </div>`;
+            })
+            .join('');
+            renderSummaryCards('#search-summary', filtered);
         }
 
         renderSearchCharts(filtered);
@@ -1034,6 +1045,7 @@
 
         if (filtered.length === 0) {
             list.innerHTML = '<div class="no-entries">Keine Einträge vorhanden.</div>';
+            renderSummaryCards('#search-summary', []);
             renderSearchCharts([]);
             renderSearchTips([]);
             return;
@@ -1062,6 +1074,7 @@
             })
             .join('');
 
+        renderSummaryCards('#search-summary', filtered);
         renderSearchCharts(filtered);
         renderSearchTips(state.tips);
     });
