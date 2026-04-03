@@ -1253,16 +1253,17 @@ section.view.active::before {
     font-weight: 600;
 }
 
+.timer-reset-primary,
 #btn-timer-reset {
     grid-column: 1;
-    margin-top: -16px !important;
+    margin-top: 6px !important;
     justify-self: center;
     align-self: start;
 }
 
 .timer-reset-secondary {
     grid-column: 2;
-    margin-top: -16px;
+    margin-top: 6px;
     justify-self: center;
     align-self: start;
 }
