@@ -979,7 +979,7 @@ body::before {
 header {
     position: relative;
     margin-bottom: 28px;
-    padding: 40px;
+    padding: 34px 40px 28px;
     text-align: left;
     border: 1px solid rgba(255, 255, 255, 0.7);
     border-radius: 36px;
@@ -1004,13 +1004,7 @@ header::before {
 }
 
 header::after {
-    content: "Lokales Tracking mit klaren Timern, ruhigen Berichten und einer aufgeraumten Arbeitsflache.";
-    display: block;
-    max-width: 560px;
-    margin-top: 14px;
-    color: var(--text-muted);
-    font-size: 1rem;
-    line-height: 1.75;
+    content: none;
 }
 
 header h1 {
@@ -1261,12 +1255,14 @@ section.view.active::before {
 
 #btn-timer-reset {
     grid-column: 1;
-    margin-top: 0 !important;
+    margin-top: -16px !important;
     justify-self: center;
+    align-self: start;
 }
 
 .timer-reset-secondary {
     grid-column: 2;
+    margin-top: -16px;
     justify-self: center;
     align-self: start;
 }
@@ -1647,7 +1643,7 @@ textarea:focus,
     }
 
     header {
-        padding: 28px;
+        padding: 26px 28px 22px;
         border-radius: 28px;
     }
 
@@ -1681,7 +1677,7 @@ textarea:focus,
     }
 
     header {
-        padding: 22px;
+        padding: 20px 22px 18px;
         margin-bottom: 18px;
     }
 
