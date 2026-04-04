@@ -1804,6 +1804,12 @@ textarea:focus,
         padding: 0;
     }
 
+    #btn-report-reset {
+        grid-column: 1 / -1;
+        justify-self: center;
+        margin-left: 0 !important;
+    }
+
     .report-custom-range {
         display: grid;
         grid-template-columns: 1fr;
