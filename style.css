@@ -1948,4 +1948,36 @@ textarea:focus,
         min-width: 52px;
         height: 48px;
     }
+
+    .settings-item {
+        display: grid;
+        grid-template-columns: 14px minmax(0, 1fr);
+        gap: 10px 12px;
+        align-items: start;
+    }
+
+    .settings-item .color-dot {
+        grid-column: 1;
+        grid-row: 1;
+        margin-top: 8px;
+    }
+
+    .settings-item .name {
+        grid-column: 2;
+        grid-row: 1;
+        min-width: 0;
+    }
+
+    .settings-item-actions {
+        grid-column: 2;
+        grid-row: 2;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .settings-item-actions button {
+        flex: 0 0 auto;
+    }
 }
