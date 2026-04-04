@@ -1261,8 +1261,8 @@ section.view.active::before {
 .timer-reset-primary,
 #btn-timer-reset {
     grid-column: 1;
-    margin-top: -8px !important;
-    margin-bottom: -10px;
+    margin-top: -30px !important;
+    margin-bottom: -24px;
     justify-self: center;
     align-self: start;
 }
