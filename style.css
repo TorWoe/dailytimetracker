@@ -1732,6 +1732,106 @@ textarea:focus,
 }
 
 @media (max-width: 430px) {
+    .timer-display {
+        padding: 22px 14px 18px;
+    }
+
+    #timer {
+        font-size: clamp(2.8rem, 18vw, 4.2rem);
+    }
+
+    .timer-controls {
+        gap: 10px;
+    }
+
+    .timer-controls .btn,
+    .timer-reset-primary,
+    .timer-reset-secondary,
+    #btn-timer-reset,
+    #btn-timer-reset-secondary {
+        min-height: 46px;
+    }
+
+    .timer-form,
+    .manual-entry,
+    .tip-form,
+    .settings-section {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .timer-form,
+    .manual-form,
+    .tip-form {
+        gap: 10px;
+    }
+
+    .timer-form input[type="text"],
+    .timer-form select,
+    .manual-form input[type="text"],
+    .manual-form select,
+    .manual-form input[type="date"],
+    .manual-form input[type="time"],
+    .tip-form input[type="text"],
+    .tip-form input[type="number"],
+    .tip-form textarea,
+    .settings-add input[type="text"] {
+        min-height: 48px;
+        padding: 10px 12px;
+        font-size: 0.95rem;
+    }
+
+    .manual-time-row {
+        gap: 8px;
+    }
+
+    .report-controls {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .report-controls .report-tab {
+        width: 100%;
+        min-height: 46px;
+    }
+
+    .report-nav {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr) 44px;
+        gap: 10px;
+        align-items: center;
+    }
+
+    #report-date-label {
+        min-width: 0;
+        padding: 0;
+        font-size: 0.92rem;
+    }
+
+    .report-nav .btn-small {
+        width: 44px;
+        min-width: 44px;
+        min-height: 46px;
+        padding: 0;
+    }
+
+    .report-custom-range {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .report-custom-range label input {
+        min-height: 48px;
+        padding: 10px 12px;
+    }
+
+    .report-custom-range .btn {
+        width: 100%;
+        min-height: 48px;
+    }
+
     .entries-filters {
         display: grid;
         grid-template-columns: 44px minmax(0, 1fr) 44px;
@@ -1818,5 +1918,40 @@ textarea:focus,
 
     .search-actions-row .btn {
         width: 100%;
+    }
+
+    .tips-actions-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        justify-content: stretch;
+    }
+
+    .tips-actions-row .btn {
+        width: 100%;
+        min-height: 48px;
+    }
+
+    .settings-section .btn {
+        width: 100%;
+        margin-right: 0;
+    }
+
+    .settings-add {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 52px;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .settings-add .btn {
+        min-height: 48px;
+        padding: 0;
+    }
+
+    .settings-add input[type="color"] {
+        width: 52px;
+        min-width: 52px;
+        height: 48px;
     }
 }
