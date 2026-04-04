@@ -391,7 +391,7 @@
 
     function updateReportNav() {
         const isCustom = state.reportPeriod === 'custom';
-        $('.report-nav').style.display = isCustom ? 'none' : 'flex';
+        $('.report-nav').style.display = isCustom ? 'none' : '';
     }
 
     $$('.report-tab').forEach((tab) => {

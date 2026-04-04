@@ -1786,12 +1786,15 @@ textarea:focus,
         grid-template-columns: 44px minmax(0, 1fr) 44px;
         gap: 10px;
         align-items: center;
+        justify-items: center;
     }
 
     #report-date-label {
         min-width: 0;
         padding: 0;
         font-size: 0.92rem;
+        width: 100%;
+        text-align: center;
     }
 
     .report-nav .btn-small {
