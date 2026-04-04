@@ -1730,3 +1730,47 @@ textarea:focus,
         grid-template-columns: 1fr;
     }
 }
+
+@media (max-width: 430px) {
+    .entries-filters {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr) 44px;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .entries-filters input[type="date"] {
+        min-width: 0;
+        width: 100%;
+        min-height: 48px;
+        padding: 10px 12px;
+        font-size: 0.95rem;
+    }
+
+    .entries-filters select {
+        min-width: 0;
+        width: 100%;
+        min-height: 48px;
+        padding: 10px 12px;
+        font-size: 0.95rem;
+        grid-column: 1 / -1;
+    }
+
+    .entries-filters .btn-small {
+        width: 44px;
+        min-width: 44px;
+        min-height: 48px;
+        padding: 0;
+    }
+
+    .entries-actions-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .entries-actions-row .btn {
+        width: 100%;
+        min-height: 48px;
+    }
+}
