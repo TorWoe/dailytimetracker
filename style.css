@@ -1157,18 +1157,6 @@ section.view.active::before {
     text-transform: uppercase;
 }
 
-.timer-display::after {
-    content: "";
-    position: absolute;
-    width: 220px;
-    height: 220px;
-    top: -90px;
-    right: -80px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(44, 107, 237, 0.14), transparent 68%);
-    pointer-events: none;
-}
-
 #timer {
     display: block;
     color: #0f172a;
