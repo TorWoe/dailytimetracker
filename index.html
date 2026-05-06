@@ -42,6 +42,10 @@
                     <option value="">-- Kategorie wählen --</option>
                 </select>
                 <input type="text" id="tag-input" placeholder="Tags (kommagetrennt)">
+                <div class="entry-type-row" id="timer-entry-type-row">
+                    <label><input type="radio" name="timer-entry-type" value="erfolgt" checked> erfolgt</label>
+                    <label><input type="radio" name="timer-entry-type" value="geplant" disabled> geplant</label>
+                </div>
             </div>
             <button id="btn-timer-reset" class="btn btn-secondary timer-reset-primary">Reset</button>
             <div class="manual-entry">
@@ -55,6 +59,10 @@
                         <option value="">-- Kategorie --</option>
                     </select>
                     <input type="text" id="manual-tags" placeholder="Tags...">
+                    <div class="entry-type-row" id="manual-entry-type-row">
+                        <label><input type="radio" name="manual-entry-type" value="erfolgt"> erfolgt</label>
+                        <label><input type="radio" name="manual-entry-type" value="geplant"> geplant</label>
+                    </div>
                     <div class="manual-time-row">
                         <label>Von: <input type="time" id="manual-start"></label>
                         <label>Bis: <input type="time" id="manual-end"></label>
@@ -70,6 +78,10 @@
         <section id="entries" class="view">
             <div class="entries-header">
                 <h2>Zeiteinträge</h2>
+                <div class="entry-type-row" id="entries-entry-type-row">
+                    <label><input type="radio" name="entries-entry-type" value="erfolgt"> erfolgt</label>
+                    <label><input type="radio" name="entries-entry-type" value="geplant"> geplant</label>
+                </div>
                 <div class="entries-filters">
                     <button id="filter-date-prev" class="btn btn-small">&larr;</button>
                     <input type="date" id="filter-date">
@@ -109,6 +121,10 @@
         <section id="reports" class="view">
             <div class="reports-header">
                 <h2>Berichte</h2>
+                <div class="entry-type-row" id="reports-entry-type-row">
+                    <label><input type="radio" name="reports-entry-type" value="erfolgt"> erfolgt</label>
+                    <label><input type="radio" name="reports-entry-type" value="geplant"> geplant</label>
+                </div>
                 <div class="report-controls">
                     <button class="report-tab active" data-period="day">Tag</button>
                     <button class="report-tab" data-period="week">Woche</button>
@@ -128,7 +144,7 @@
                 </div>
             </div>
             <div class="report-summary" id="report-summary"></div>
-            <div class="charts-container">
+            <div class="charts-container" id="report-charts-container">
                 <div class="chart-box">
                     <h3>Zeit pro Projekt</h3>
                     <canvas id="chart-projects"></canvas>
@@ -148,6 +164,10 @@
         <section id="search" class="view">
             <div class="search-header">
                 <h2>Suche</h2>
+                <div class="entry-type-row" id="search-entry-type-row">
+                    <label><input type="radio" name="search-entry-type" value="erfolgt"> erfolgt</label>
+                    <label><input type="radio" name="search-entry-type" value="geplant"> geplant</label>
+                </div>
                 <div class="search-filters">
                     <input type="text" id="search-text" placeholder="Aufgabe oder Tag suchen...">
                     <div class="multi-select" id="search-project-select">
@@ -258,6 +278,10 @@
                     <select id="edit-category"></select>
                 </label>
                 <label>Tags<input type="text" id="edit-tags" placeholder="kommagetrennt"></label>
+                <div class="entry-type-row modal-entry-type-row" id="edit-entry-type-row">
+                    <label><input type="radio" name="edit-entry-type" value="erfolgt"> erfolgt</label>
+                    <label><input type="radio" name="edit-entry-type" value="geplant"> geplant</label>
+                </div>
                 <div class="modal-time-row">
                     <label>Von<input type="time" id="edit-start"></label>
                     <label>Bis<input type="time" id="edit-end"></label>
