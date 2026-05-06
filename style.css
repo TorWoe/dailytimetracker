@@ -1760,6 +1760,20 @@ textarea:focus,
     .report-summary {
         grid-template-columns: 1fr;
     }
+
+    .modal-overlay {
+        align-items: flex-start;
+        overflow-y: auto;
+        padding: max(16px, env(safe-area-inset-top)) 10px max(24px, env(safe-area-inset-bottom));
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .modal {
+        max-height: calc(100vh - 32px);
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
 }
 
 @media (max-width: 430px) {
