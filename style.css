@@ -228,6 +228,35 @@ input::placeholder {
     color: var(--text-muted);
 }
 
+.entry-type-row {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.timer-form .entry-type-row {
+    grid-column: 1 / -1;
+}
+
+.entry-type-row label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.entry-type-row input[type="radio"] {
+    accent-color: var(--primary);
+}
+
+.entry-type-row label:has(input[type="radio"]:disabled) {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
 /* Manual Entry */
 .manual-entry {
     background: var(--bg-card);
@@ -384,6 +413,16 @@ input::placeholder {
     border-radius: 12px;
     font-size: 0.75rem;
     font-weight: 500;
+}
+
+.entry-type-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    background: rgba(74, 144, 217, 0.14);
+    color: var(--primary);
+    font-size: 0.75rem;
+    font-weight: 700;
 }
 
 .no-entries {
@@ -1243,6 +1282,13 @@ section.view.active::before {
     font-weight: 600;
 }
 
+.modal-form .entry-type-row label,
+.manual-form .entry-type-row label,
+.timer-form .entry-type-row label {
+    flex-direction: row;
+    align-items: center;
+}
+
 .timer-reset-primary,
 #btn-timer-reset {
     grid-column: 1;
@@ -1768,6 +1814,18 @@ textarea:focus,
 
     .manual-time-row {
         gap: 8px;
+    }
+
+    .entry-type-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        width: 100%;
+    }
+
+    .entry-type-row label {
+        justify-content: center;
+        min-height: 44px;
     }
 
     .report-controls {

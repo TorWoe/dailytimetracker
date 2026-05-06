@@ -14,6 +14,19 @@
         reportCustomEnd: '',
     };
 
+    const ENTRY_TYPES = ['erfolgt', 'geplant'];
+
+    function normalizeEntryType(type) {
+        return ENTRY_TYPES.includes(type) ? type : 'erfolgt';
+    }
+
+    function migrateEntries(entries) {
+        return entries.map((entry) => ({
+            ...entry,
+            entryType: normalizeEntryType(entry.entryType),
+        }));
+    }
+
     // ── LocalStorage ──
     function save() {
         localStorage.setItem('dtt_entries', JSON.stringify(state.entries));
@@ -24,7 +37,7 @@
 
     function load() {
         try {
-            state.entries = JSON.parse(localStorage.getItem('dtt_entries')) || [];
+            state.entries = migrateEntries(JSON.parse(localStorage.getItem('dtt_entries')) || []);
             state.projects = JSON.parse(localStorage.getItem('dtt_projects')) || [];
             state.categories = JSON.parse(localStorage.getItem('dtt_categories')) || [];
             state.tips = JSON.parse(localStorage.getItem('dtt_tips')) || [];
@@ -113,6 +126,22 @@
     // ── DOM refs ──
     const $ = (sel) => document.querySelector(sel);
     const $$ = (sel) => document.querySelectorAll(sel);
+
+    function getSelectedEntryType(name) {
+        const checked = document.querySelector(`input[name="${name}"]:checked`);
+        return checked ? normalizeEntryType(checked.value) : '';
+    }
+
+    function clearRadioGroup(name) {
+        $$(`input[name="${name}"]`).forEach((radio) => {
+            radio.checked = false;
+        });
+    }
+
+    function clearSummaryCards(targetSel) {
+        const el = $(targetSel);
+        if (el) el.innerHTML = '';
+    }
 
     // ── Navigation ──
     $$('.nav-btn').forEach((btn) => {
@@ -209,6 +238,7 @@
             task: task,
             project: $('#project-select').value,
             category: $('#category-select').value,
+            entryType: 'erfolgt',
             tags: $('#tag-input').value.split(',').map((t) => t.trim()).filter(Boolean),
             date: todayStr(),
             start: new Date(Date.now() - totalSeconds * 1000).toTimeString().slice(0, 5),
@@ -229,6 +259,12 @@
         const startTime = $('#manual-start').value;
         const endTime = $('#manual-end').value;
         const date = $('#manual-date').value;
+        const entryType = getSelectedEntryType('manual-entry-type');
+
+        if (!entryType) {
+            alert('Bitte erfolgt oder geplant auswählen.');
+            return;
+        }
 
         if (!startTime || !endTime || !date) {
             alert('Bitte Start, Ende und Datum angeben.');
@@ -248,6 +284,7 @@
             task: task,
             project: $('#manual-project').value,
             category: $('#manual-category').value,
+            entryType: entryType,
             tags: $('#manual-tags').value.split(',').map((t) => t.trim()).filter(Boolean),
             date: date,
             start: startTime,
@@ -260,15 +297,26 @@
         $('#manual-tags').value = '';
         $('#manual-start').value = '';
         $('#manual-end').value = '';
+        clearRadioGroup('manual-entry-type');
     });
 
     // ── Entries View ──
     function renderEntries() {
+        const selectedType = getSelectedEntryType('entries-entry-type');
         const filterDate = $('#filter-date').value;
         const filterProject = $('#filter-project').value;
         const filterCategory = $('#filter-category').value;
+        const list = $('#entries-list');
+
+        if (!selectedType) {
+            list.innerHTML = '';
+            clearSummaryCards('#entries-summary');
+            renderEntriesCharts([]);
+            return;
+        }
 
         let filtered = [...state.entries];
+        filtered = filtered.filter((e) => normalizeEntryType(e.entryType) === selectedType);
         if (filterDate) filtered = filtered.filter((e) => e.date === filterDate);
         if (filterProject) filtered = filtered.filter((e) => e.project === filterProject);
         if (filterCategory) filtered = filtered.filter((e) => e.category === filterCategory);
@@ -278,7 +326,6 @@
             return b.start.localeCompare(a.start);
         });
 
-        const list = $('#entries-list');
         if (filtered.length === 0) {
             list.innerHTML = '<div class="no-entries">Keine Einträge gefunden.</div>';
             renderSummaryCards('#entries-summary', []);
@@ -293,6 +340,7 @@
                 const tagsHtml = (e.tags || []).map((t) => `<span class="tag">${escHtml(t)}</span>`).join('');
                 const projBadge = proj ? `<span class="project-badge" style="background:${proj.color}33;color:${proj.color}">${escHtml(proj.name)}</span>` : '';
                 const catBadge = cat ? `<span class="category-badge" style="background:${cat.color}33;color:${cat.color}">${escHtml(cat.name)}</span>` : '';
+                const typeBadge = `<span class="entry-type-badge">${escHtml(normalizeEntryType(e.entryType))}</span>`;
 
                 return `<div class="entry-card">
                     <div class="entry-info">
@@ -300,7 +348,7 @@
                         <div class="entry-meta">
                             <span>${e.date}</span>
                             <span>${e.start} – ${e.end}</span>
-                            ${projBadge}${catBadge}
+                            ${typeBadge}${projBadge}${catBadge}
                         </div>
                         <div style="margin-top:4px">${tagsHtml}</div>
                     </div>
@@ -321,6 +369,9 @@
     $('#filter-date').addEventListener('change', renderEntries);
     $('#filter-project').addEventListener('change', renderEntries);
     $('#filter-category').addEventListener('change', renderEntries);
+    $$('input[name="entries-entry-type"]').forEach((radio) => {
+        radio.addEventListener('change', renderEntries);
+    });
 
     $('#filter-date-prev').addEventListener('click', () => {
         const el = $('#filter-date');
@@ -352,20 +403,27 @@
 
     // ── CSV Export ──
     $('#btn-export').addEventListener('click', () => {
+        const selectedType = getSelectedEntryType('entries-entry-type');
         const filterDate = $('#filter-date').value;
         const filterProject = $('#filter-project').value;
         const filterCategory = $('#filter-category').value;
 
+        if (!selectedType) {
+            alert('Bitte erfolgt oder geplant auswählen.');
+            return;
+        }
+
         let filtered = [...state.entries];
+        filtered = filtered.filter((e) => normalizeEntryType(e.entryType) === selectedType);
         if (filterDate) filtered = filtered.filter((e) => e.date === filterDate);
         if (filterProject) filtered = filtered.filter((e) => e.project === filterProject);
         if (filterCategory) filtered = filtered.filter((e) => e.category === filterCategory);
 
-        const headers = ['Datum', 'Start', 'Ende', 'Dauer (Min)', 'Aufgabe', 'Projekt', 'Kategorie', 'Tags'];
+        const headers = ['Art', 'Datum', 'Start', 'Ende', 'Dauer (Min)', 'Aufgabe', 'Projekt', 'Kategorie', 'Tags'];
         const rows = filtered.map((e) => {
             const proj = state.projects.find((p) => p.id === e.project);
             const cat = state.categories.find((c) => c.id === e.category);
-            return [e.date, e.start, e.end, Math.round(e.duration / 60), `"${e.task}"`, proj ? proj.name : '', cat ? cat.name : '', (e.tags || []).join('; ')];
+            return [normalizeEntryType(e.entryType), e.date, e.start, e.end, Math.round(e.duration / 60), `"${e.task}"`, proj ? proj.name : '', cat ? cat.name : '', (e.tags || []).join('; ')];
         });
 
         const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -388,6 +446,11 @@
     let entriesChartProjects = null;
     let entriesChartCategories = null;
     let entriesChartDaily = null;
+
+    function destroyChart(chart) {
+        if (chart) chart.destroy();
+        return null;
+    }
 
     function updateReportNav() {
         const isCustom = state.reportPeriod === 'custom';
@@ -432,6 +495,10 @@
     $('#report-next').addEventListener('click', () => {
         state.reportOffset++;
         renderReports();
+    });
+
+    $$('input[name="reports-entry-type"]').forEach((radio) => {
+        radio.addEventListener('change', renderReports);
     });
 
     $('#btn-report-reset').addEventListener('click', () => {
@@ -497,9 +564,21 @@
 
     function renderReports() {
         const { start, end, label } = getReportRange();
+        const selectedType = getSelectedEntryType('reports-entry-type');
         $('#report-date-label').textContent = label;
 
-        const entries = state.entries.filter((e) => e.date >= start && e.date <= end);
+        const chartContainer = $('#report-charts-container');
+        if (!selectedType) {
+            clearSummaryCards('#report-summary');
+            chartContainer.style.display = 'none';
+            chartProjects = destroyChart(chartProjects);
+            chartCategories = destroyChart(chartCategories);
+            chartDaily = destroyChart(chartDaily);
+            return;
+        }
+
+        chartContainer.style.display = '';
+        const entries = state.entries.filter((e) => normalizeEntryType(e.entryType) === selectedType && e.date >= start && e.date <= end);
         renderSummaryCards('#report-summary', entries);
         renderCharts(entries, start, end);
     }
@@ -893,10 +972,16 @@
 
     function getSearchFiltered() {
         const query = $('#search-text').value.trim().toLowerCase();
+        const selectedType = getSelectedEntryType('search-entry-type');
         const selectedProjects = getMultiSelectValues('search-project-select');
         const selectedCategories = getMultiSelectValues('search-category-select');
 
         let filtered = [...state.entries];
+        if (selectedType) {
+            filtered = filtered.filter((e) => normalizeEntryType(e.entryType) === selectedType);
+        } else {
+            filtered = [];
+        }
 
         if (query) {
             filtered = filtered.filter((e) => {
@@ -919,7 +1004,7 @@
             return b.start.localeCompare(a.start);
         });
 
-        return { filtered, query, selectedProjects, selectedCategories };
+        return { filtered, query, selectedType, selectedProjects, selectedCategories };
     }
 
     function getSearchFilteredTips(query) {
@@ -946,11 +1031,19 @@
     }
 
     function renderSearch() {
-        const { filtered, query, selectedProjects, selectedCategories } = getSearchFiltered();
+        const { filtered, query, selectedType, selectedProjects, selectedCategories } = getSearchFiltered();
 
         const entriesBlock = $('#search-entries-block');
         const countEl = $('#search-result-count');
         const list = $('#search-results');
+
+        if (!selectedType) {
+            entriesBlock.style.display = 'none';
+            clearSummaryCards('#search-summary');
+            renderSearchCharts([]);
+            renderSearchTips([]);
+            return;
+        }
 
         if (!query && selectedProjects.length === 0 && selectedCategories.length === 0) {
             entriesBlock.style.display = 'none';
@@ -974,6 +1067,7 @@
                     const tagsHtml = (e.tags || []).map((t) => `<span class="tag">${escHtml(t)}</span>`).join('');
                     const projBadge = proj ? `<span class="project-badge" style="background:${proj.color}33;color:${proj.color}">${escHtml(proj.name)}</span>` : '';
                     const catBadge = cat ? `<span class="category-badge" style="background:${cat.color}33;color:${cat.color}">${escHtml(cat.name)}</span>` : '';
+                    const typeBadge = `<span class="entry-type-badge">${escHtml(normalizeEntryType(e.entryType))}</span>`;
 
                     return `<div class="entry-card">
                         <div class="entry-info">
@@ -981,7 +1075,7 @@
                             <div class="entry-meta">
                                 <span>${e.date}</span>
                                 <span>${e.start} – ${e.end}</span>
-                                ${projBadge}${catBadge}
+                                ${typeBadge}${projBadge}${catBadge}
                             </div>
                             <div style="margin-top:4px">${tagsHtml}</div>
                         </div>
@@ -1005,17 +1099,21 @@
     $('#btn-timer-reset-secondary').addEventListener('click', resetTimerView);
 
     $('#btn-search-export').addEventListener('click', () => {
-        const { filtered } = getSearchFiltered();
+        const { filtered, selectedType } = getSearchFiltered();
+        if (!selectedType) {
+            alert('Bitte erfolgt oder geplant auswählen.');
+            return;
+        }
         if (filtered.length === 0) {
             alert('Keine Einträge zum Exportieren vorhanden.');
             return;
         }
 
-        const headers = ['Datum', 'Start', 'Ende', 'Dauer (Min)', 'Aufgabe', 'Projekt', 'Kategorie', 'Tags'];
+        const headers = ['Art', 'Datum', 'Start', 'Ende', 'Dauer (Min)', 'Aufgabe', 'Projekt', 'Kategorie', 'Tags'];
         const rows = filtered.map((e) => {
             const proj = state.projects.find((p) => p.id === e.project);
             const cat = state.categories.find((c) => c.id === e.category);
-            return [e.date, e.start, e.end, Math.round(e.duration / 60), `"${e.task}"`, proj ? proj.name : '', cat ? cat.name : '', (e.tags || []).join('; ')];
+            return [normalizeEntryType(e.entryType), e.date, e.start, e.end, Math.round(e.duration / 60), `"${e.task}"`, proj ? proj.name : '', cat ? cat.name : '', (e.tags || []).join('; ')];
         });
 
         const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -1029,7 +1127,16 @@
     });
 
     $('#btn-show-all').addEventListener('click', () => {
-        const filtered = [...state.entries].sort((a, b) => {
+        const selectedType = getSelectedEntryType('search-entry-type');
+        if (!selectedType) {
+            $('#search-entries-block').style.display = 'none';
+            clearSummaryCards('#search-summary');
+            renderSearchCharts([]);
+            renderSearchTips([]);
+            return;
+        }
+
+        const filtered = state.entries.filter((e) => normalizeEntryType(e.entryType) === selectedType).sort((a, b) => {
             if (a.date !== b.date) return b.date.localeCompare(a.date);
             return b.start.localeCompare(a.start);
         });
@@ -1056,6 +1163,7 @@
                 const tagsHtml = (e.tags || []).map((t) => `<span class="tag">${escHtml(t)}</span>`).join('');
                 const projBadge = proj ? `<span class="project-badge" style="background:${proj.color}33;color:${proj.color}">${escHtml(proj.name)}</span>` : '';
                 const catBadge = cat ? `<span class="category-badge" style="background:${cat.color}33;color:${cat.color}">${escHtml(cat.name)}</span>` : '';
+                const typeBadge = `<span class="entry-type-badge">${escHtml(normalizeEntryType(e.entryType))}</span>`;
 
                 return `<div class="entry-card">
                     <div class="entry-info">
@@ -1063,7 +1171,7 @@
                         <div class="entry-meta">
                             <span>${e.date}</span>
                             <span>${e.start} – ${e.end}</span>
-                            ${projBadge}${catBadge}
+                            ${typeBadge}${projBadge}${catBadge}
                         </div>
                         <div style="margin-top:4px">${tagsHtml}</div>
                     </div>
@@ -1080,6 +1188,9 @@
     $('#btn-search').addEventListener('click', renderSearch);
     $('#search-text').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') renderSearch();
+    });
+    $$('input[name="search-entry-type"]').forEach((radio) => {
+        radio.addEventListener('change', renderSearch);
     });
 
     $('#btn-search-reset').addEventListener('click', () => {
@@ -1278,7 +1389,7 @@
         reader.onload = (ev) => {
             try {
                 const data = JSON.parse(ev.target.result);
-                if (data.entries) state.entries = data.entries;
+                if (data.entries) state.entries = migrateEntries(data.entries);
                 if (data.projects) state.projects = data.projects;
                 if (data.categories) state.categories = data.categories;
                 if (data.tips) state.tips = data.tips;
@@ -1331,6 +1442,10 @@
         $('#edit-date').value = entry.date;
         $('#edit-start').value = entry.start;
         $('#edit-end').value = entry.end;
+        const entryType = normalizeEntryType(entry.entryType);
+        $$('input[name="edit-entry-type"]').forEach((radio) => {
+            radio.checked = radio.value === entryType;
+        });
 
         modal.hidden = false;
     }
@@ -1340,6 +1455,12 @@
         const startTime = $('#edit-start').value;
         const endTime = $('#edit-end').value;
         const date = $('#edit-date').value;
+        const entryType = getSelectedEntryType('edit-entry-type');
+
+        if (!entryType) {
+            alert('Bitte erfolgt oder geplant auswählen.');
+            return;
+        }
 
         if (!startTime || !endTime || !date) {
             alert('Bitte Start, Ende und Datum angeben.');
@@ -1360,6 +1481,7 @@
         entry.task = task;
         entry.project = $('#edit-project').value;
         entry.category = $('#edit-category').value;
+        entry.entryType = entryType;
         entry.tags = $('#edit-tags').value.split(',').map((t) => t.trim()).filter(Boolean);
         entry.date = date;
         entry.start = startTime;
