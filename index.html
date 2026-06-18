@@ -15,6 +15,7 @@
             <h1>Daily Time Tracker</h1>
             <nav>
                 <button class="nav-btn active" data-view="tracker">Timer</button>
+                <button class="nav-btn" data-view="vday">vDay</button>
                 <button class="nav-btn" data-view="entries">Einträge</button>
                 <button class="nav-btn" data-view="reports">Berichte</button>
                 <button class="nav-btn" data-view="search">Suche</button>
@@ -72,6 +73,40 @@
                 </div>
             </div>
             <button id="btn-timer-reset-secondary" class="btn btn-secondary timer-reset-secondary">Reset</button>
+        </section>
+
+        <!-- Visual Day View -->
+        <section id="vday" class="view">
+            <div class="vday-header">
+                <div>
+                    <h2>visual Day</h2>
+                    <div class="vday-date-label" id="vday-date-label"></div>
+                </div>
+                <div class="vday-controls">
+                    <button id="vday-prev" class="btn btn-small">&larr;</button>
+                    <input type="date" id="vday-date">
+                    <button id="vday-next" class="btn btn-small">&rarr;</button>
+                    <button id="vday-today" class="btn btn-secondary">Heute</button>
+                </div>
+            </div>
+            <div class="vday-layout">
+                <div class="vday-board">
+                    <div class="vday-board-head">
+                        <h3>Tagesplanung</h3>
+                    </div>
+                    <div class="vday-scroll" id="vday-scroll">
+                        <div class="vday-timeline" id="vday-timeline"></div>
+                        <div class="vday-dropzone" id="vday-dropzone" aria-label="Tagesplanung"></div>
+                    </div>
+                </div>
+                <aside class="vday-repository">
+                    <div class="vday-repo-head">
+                        <h3>Geplante Einträge</h3>
+                        <span id="vday-repo-count"></span>
+                    </div>
+                    <div class="vday-repo-list" id="vday-repo-list"></div>
+                </aside>
+            </div>
         </section>
 
         <!-- Entries View -->

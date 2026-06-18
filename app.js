@@ -12,9 +12,12 @@
         reportOffset: 0,
         reportCustomStart: '',
         reportCustomEnd: '',
+        vdayDate: '',
     };
 
     const ENTRY_TYPES = ['erfolgt', 'geplant'];
+    const VDAY_STEP_MINUTES = 15;
+    const VDAY_DAY_MINUTES = 24 * 60;
 
     function normalizeEntryType(type) {
         return ENTRY_TYPES.includes(type) ? type : 'erfolgt';
@@ -143,6 +146,58 @@
         if (el) el.innerHTML = '';
     }
 
+    function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+    }
+
+    function snapMinutes(minutes) {
+        return clamp(Math.round(minutes / VDAY_STEP_MINUTES) * VDAY_STEP_MINUTES, 0, VDAY_DAY_MINUTES);
+    }
+
+    function timeToMinutes(value) {
+        if (!value) return 0;
+        if (value === '24:00') return VDAY_DAY_MINUTES;
+        const [hours, minutes] = value.split(':').map(Number);
+        if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return 0;
+        return clamp(hours * 60 + minutes, 0, VDAY_DAY_MINUTES);
+    }
+
+    function minutesToTime(minutes) {
+        const safeMinutes = clamp(Math.round(minutes), 0, VDAY_DAY_MINUTES);
+        if (safeMinutes >= VDAY_DAY_MINUTES) return '24:00';
+        const hours = Math.floor(safeMinutes / 60);
+        const mins = safeMinutes % 60;
+        return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+    }
+
+    function minutesToStoredTime(minutes) {
+        return minutes >= VDAY_DAY_MINUTES ? '23:59' : minutesToTime(minutes);
+    }
+
+    function entryEndMinutes(entry) {
+        const start = timeToMinutes(entry.start);
+        const durationMinutes = Math.max(VDAY_STEP_MINUTES, Math.round((entry.duration || 0) / 60));
+        const byDuration = start + durationMinutes;
+        const byEnd = timeToMinutes(entry.end);
+        return clamp(Math.max(byDuration, byEnd, start + VDAY_STEP_MINUTES), start + VDAY_STEP_MINUTES, VDAY_DAY_MINUTES);
+    }
+
+    function setEntrySchedule(entry, date, startMinutes, durationMinutes) {
+        const safeDuration = Math.max(VDAY_STEP_MINUTES, snapMinutes(durationMinutes));
+        const safeStart = clamp(snapMinutes(startMinutes), 0, VDAY_DAY_MINUTES - safeDuration);
+        const endMinutes = clamp(safeStart + safeDuration, safeStart + VDAY_STEP_MINUTES, VDAY_DAY_MINUTES);
+        entry.date = date;
+        entry.start = minutesToTime(safeStart);
+        entry.end = minutesToStoredTime(endMinutes);
+        entry.duration = Math.round((endMinutes - safeStart) * 60);
+    }
+
+    function shiftDateStr(dateStr, days) {
+        const d = dateStr ? new Date(dateStr + 'T00:00:00') : new Date();
+        d.setDate(d.getDate() + days);
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
     // ── Navigation ──
     $$('.nav-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
@@ -150,6 +205,7 @@
             btn.classList.add('active');
             $$('.view').forEach((v) => v.classList.remove('active'));
             $(`#${btn.dataset.view}`).classList.add('active');
+            if (btn.dataset.view === 'vday') renderVDay();
             if (btn.dataset.view === 'entries') renderEntries();
             if (btn.dataset.view === 'reports') renderReports();
             if (btn.dataset.view === 'search') initSearchMultiSelects();
@@ -298,6 +354,273 @@
         $('#manual-start').value = '';
         $('#manual-end').value = '';
         clearRadioGroup('manual-entry-type');
+        renderVDayIfActive();
+    });
+
+    // ── Visual Day View ──
+    let vdayResize = null;
+
+    function getVDayDate() {
+        return $('#vday-date')?.value || state.vdayDate || todayStr();
+    }
+
+    function setVDayDate(dateStr) {
+        state.vdayDate = dateStr;
+        const input = $('#vday-date');
+        if (input) input.value = dateStr;
+        renderVDay();
+    }
+
+    function plannedEntries() {
+        return state.entries
+            .filter((entry) => normalizeEntryType(entry.entryType) === 'geplant')
+            .sort((a, b) => {
+                if (a.date !== b.date) return a.date.localeCompare(b.date);
+                if (a.start !== b.start) return a.start.localeCompare(b.start);
+                return a.task.localeCompare(b.task, 'de');
+            });
+    }
+
+    function renderVDayTimeline() {
+        const timeline = $('#vday-timeline');
+        if (!timeline) return;
+        timeline.innerHTML = Array.from({ length: 25 }, (_, hour) => {
+            const label = `${String(hour).padStart(2, '0')}:00`;
+            const top = (hour * 60 / VDAY_DAY_MINUTES) * 100;
+            return `<div class="vday-time-label" style="top:${top}%">${label}</div>`;
+        }).join('');
+    }
+
+    function renderVDayEvent(entry) {
+        const project = state.projects.find((p) => p.id === entry.project);
+        const category = state.categories.find((c) => c.id === entry.category);
+        const start = timeToMinutes(entry.start);
+        const end = entryEndMinutes(entry);
+        const top = (start / VDAY_DAY_MINUTES) * 100;
+        const height = ((end - start) / VDAY_DAY_MINUTES) * 100;
+        const color = category?.color || project?.color || '#2c6bed';
+        const meta = [project?.name, category?.name].filter(Boolean).join(' · ');
+        const tags = (entry.tags || []).slice(0, 2).map((tag) => `<span>${escHtml(tag)}</span>`).join('');
+
+        return `<div class="vday-event" draggable="true" data-vday-entry-id="${entry.id}" style="top:${top}%;height:${height}%;--event-color:${color}">
+            <div class="vday-event-content">
+                <strong>${escHtml(entry.task)}</strong>
+                <small class="vday-event-time">${minutesToTime(start)} – ${minutesToTime(end)} · ${fmt(entry.duration)}</small>
+                ${meta ? `<small>${escHtml(meta)}</small>` : ''}
+                ${tags ? `<div class="vday-event-tags">${tags}</div>` : ''}
+            </div>
+            <div class="vday-resize-handle" draggable="false" title="Dauer ändern"></div>
+        </div>`;
+    }
+
+    function renderVDayRepoItem(entry) {
+        const project = state.projects.find((p) => p.id === entry.project);
+        const category = state.categories.find((c) => c.id === entry.category);
+        const color = category?.color || project?.color || '#2c6bed';
+        const meta = [
+            entry.date,
+            `${entry.start} – ${minutesToTime(entryEndMinutes(entry))}`,
+            project?.name,
+            category?.name,
+        ].filter(Boolean).join(' · ');
+
+        return `<div class="vday-repo-item" draggable="true" data-vday-entry-id="${entry.id}" style="--event-color:${color}">
+            <strong>${escHtml(entry.task)}</strong>
+            <small>${escHtml(meta)}</small>
+        </div>`;
+    }
+
+    function renderVDay() {
+        const view = $('#vday');
+        if (!view) return;
+
+        const dateInput = $('#vday-date');
+        if (dateInput && !dateInput.value) dateInput.value = state.vdayDate || todayStr();
+        const selectedDate = getVDayDate();
+        state.vdayDate = selectedDate;
+
+        const dateLabel = $('#vday-date-label');
+        if (dateLabel) {
+            dateLabel.textContent = new Date(selectedDate + 'T00:00:00').toLocaleDateString('de-DE', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+            });
+        }
+
+        renderVDayTimeline();
+
+        const dayEntries = plannedEntries().filter((entry) => entry.date === selectedDate);
+        const dropzone = $('#vday-dropzone');
+        if (dropzone) {
+            dropzone.innerHTML = dayEntries.length
+                ? dayEntries.map((entry) => renderVDayEvent(entry)).join('')
+                : '<div class="vday-empty-day">Geplante Einträge hier ablegen</div>';
+        }
+
+        const repoEntries = plannedEntries();
+        const repoList = $('#vday-repo-list');
+        const repoCount = $('#vday-repo-count');
+        if (repoCount) repoCount.textContent = `${repoEntries.length}`;
+        if (repoList) {
+            repoList.innerHTML = repoEntries.length
+                ? repoEntries.map((entry) => renderVDayRepoItem(entry)).join('')
+                : '<div class="no-entries">Keine geplanten Einträge vorhanden.</div>';
+        }
+    }
+
+    function renderVDayIfActive() {
+        if ($('#vday')?.classList.contains('active')) renderVDay();
+    }
+
+    function getDropMinutes(clientY) {
+        const dropzone = $('#vday-dropzone');
+        if (!dropzone) return 0;
+        const rect = dropzone.getBoundingClientRect();
+        const pixelsPerMinute = dropzone.offsetHeight / VDAY_DAY_MINUTES;
+        return snapMinutes((clientY - rect.top) / pixelsPerMinute);
+    }
+
+    $('#vday-date')?.addEventListener('change', () => setVDayDate(getVDayDate()));
+    $('#vday-prev')?.addEventListener('click', () => setVDayDate(shiftDateStr(getVDayDate(), -1)));
+    $('#vday-next')?.addEventListener('click', () => setVDayDate(shiftDateStr(getVDayDate(), 1)));
+    $('#vday-today')?.addEventListener('click', () => setVDayDate(todayStr()));
+
+    document.addEventListener('dragstart', (event) => {
+        if (event.target.closest('.vday-resize-handle')) {
+            event.preventDefault();
+            return;
+        }
+        const item = event.target.closest('[data-vday-entry-id]');
+        if (!item) return;
+        event.dataTransfer.setData('text/plain', item.dataset.vdayEntryId);
+        event.dataTransfer.effectAllowed = 'move';
+    });
+
+    $('#vday-dropzone')?.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        event.currentTarget.classList.add('drag-over');
+    });
+
+    $('#vday-dropzone')?.addEventListener('dragleave', (event) => {
+        event.currentTarget.classList.remove('drag-over');
+    });
+
+    $('#vday-dropzone')?.addEventListener('drop', (event) => {
+        event.preventDefault();
+        event.currentTarget.classList.remove('drag-over');
+        const entryId = event.dataTransfer.getData('text/plain');
+        const entry = state.entries.find((item) => item.id === entryId);
+        if (!entry) return;
+
+        const durationMinutes = Math.max(VDAY_STEP_MINUTES, snapMinutes((entry.duration || VDAY_STEP_MINUTES * 60) / 60));
+        setEntrySchedule(entry, getVDayDate(), getDropMinutes(event.clientY), durationMinutes);
+        save();
+        renderVDay();
+    });
+
+    document.addEventListener('pointerdown', (event) => {
+        const handle = event.target.closest('.vday-resize-handle');
+        if (!handle) return;
+        const eventEl = handle.closest('.vday-event');
+        const entry = state.entries.find((item) => item.id === eventEl?.dataset.vdayEntryId);
+        const dropzone = $('#vday-dropzone');
+        if (!entry || !dropzone) return;
+
+        vdayResize = {
+            entryId: entry.id,
+            startMinutes: timeToMinutes(entry.start),
+            initialEndMinutes: entryEndMinutes(entry),
+            startY: event.clientY,
+            pixelsPerMinute: dropzone.offsetHeight / VDAY_DAY_MINUTES,
+            eventEl,
+        };
+        document.body.classList.add('vday-resizing');
+        event.preventDefault();
+        event.stopPropagation();
+    });
+
+    document.addEventListener('pointermove', (event) => {
+        if (!vdayResize) return;
+        const deltaMinutes = (event.clientY - vdayResize.startY) / vdayResize.pixelsPerMinute;
+        const nextEnd = clamp(
+            snapMinutes(vdayResize.initialEndMinutes + deltaMinutes),
+            vdayResize.startMinutes + VDAY_STEP_MINUTES,
+            VDAY_DAY_MINUTES
+        );
+        const height = ((nextEnd - vdayResize.startMinutes) / VDAY_DAY_MINUTES) * 100;
+        vdayResize.nextEndMinutes = nextEnd;
+        vdayResize.eventEl.style.height = `${height}%`;
+        const timeEl = vdayResize.eventEl.querySelector('.vday-event-time');
+        if (timeEl) {
+            timeEl.textContent = `${minutesToTime(vdayResize.startMinutes)} – ${minutesToTime(nextEnd)} · ${fmt((nextEnd - vdayResize.startMinutes) * 60)}`;
+        }
+    });
+
+    document.addEventListener('pointerup', () => {
+        if (!vdayResize) return;
+        const entry = state.entries.find((item) => item.id === vdayResize.entryId);
+        if (entry) {
+            const endMinutes = vdayResize.nextEndMinutes || vdayResize.initialEndMinutes;
+            setEntrySchedule(entry, getVDayDate(), vdayResize.startMinutes, endMinutes - vdayResize.startMinutes);
+            save();
+        }
+        vdayResize = null;
+        document.body.classList.remove('vday-resizing');
+        renderVDay();
+    });
+
+    document.addEventListener('mousedown', (event) => {
+        if (vdayResize || event.button !== 0) return;
+        const handle = event.target.closest('.vday-resize-handle');
+        if (!handle) return;
+        const eventEl = handle.closest('.vday-event');
+        const entry = state.entries.find((item) => item.id === eventEl?.dataset.vdayEntryId);
+        const dropzone = $('#vday-dropzone');
+        if (!entry || !dropzone) return;
+
+        vdayResize = {
+            entryId: entry.id,
+            startMinutes: timeToMinutes(entry.start),
+            initialEndMinutes: entryEndMinutes(entry),
+            startY: event.clientY,
+            pixelsPerMinute: dropzone.offsetHeight / VDAY_DAY_MINUTES,
+            eventEl,
+        };
+        document.body.classList.add('vday-resizing');
+        event.preventDefault();
+        event.stopPropagation();
+    });
+
+    document.addEventListener('mousemove', (event) => {
+        if (!vdayResize) return;
+        const deltaMinutes = (event.clientY - vdayResize.startY) / vdayResize.pixelsPerMinute;
+        const nextEnd = clamp(
+            snapMinutes(vdayResize.initialEndMinutes + deltaMinutes),
+            vdayResize.startMinutes + VDAY_STEP_MINUTES,
+            VDAY_DAY_MINUTES
+        );
+        const height = ((nextEnd - vdayResize.startMinutes) / VDAY_DAY_MINUTES) * 100;
+        vdayResize.nextEndMinutes = nextEnd;
+        vdayResize.eventEl.style.height = `${height}%`;
+        const timeEl = vdayResize.eventEl.querySelector('.vday-event-time');
+        if (timeEl) {
+            timeEl.textContent = `${minutesToTime(vdayResize.startMinutes)} – ${minutesToTime(nextEnd)} · ${fmt((nextEnd - vdayResize.startMinutes) * 60)}`;
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (!vdayResize) return;
+        const entry = state.entries.find((item) => item.id === vdayResize.entryId);
+        if (entry) {
+            const endMinutes = vdayResize.nextEndMinutes || vdayResize.initialEndMinutes;
+            setEntrySchedule(entry, getVDayDate(), vdayResize.startMinutes, endMinutes - vdayResize.startMinutes);
+            save();
+        }
+        vdayResize = null;
+        document.body.classList.remove('vday-resizing');
+        renderVDay();
     });
 
     // ── Entries View ──
@@ -1395,6 +1718,7 @@
                 if (data.tips) state.tips = data.tips;
                 save();
                 populateSelects();
+                renderVDayIfActive();
                 alert('Daten erfolgreich importiert!');
             } catch {
                 alert('Fehler beim Import. Ungültige Datei.');
@@ -1409,6 +1733,7 @@
             state.entries = [];
             save();
             renderEntries();
+            renderVDayIfActive();
             alert('Alle Zeiteinträge wurden gelöscht.');
         }
     });
@@ -1492,6 +1817,7 @@
         $('#edit-modal').hidden = true;
         editingEntryId = null;
         renderEntries();
+        renderVDayIfActive();
     });
 
     $('#edit-cancel').addEventListener('click', () => {
@@ -1567,6 +1893,7 @@
             state.entries = state.entries.filter((e) => e.id !== id);
             save();
             renderEntries();
+            renderVDayIfActive();
         },
         deleteItem(type, id) {
             if (!confirm('Wirklich löschen?')) return;
@@ -1578,6 +1905,7 @@
             save();
             populateSelects();
             renderSettings();
+            renderVDayIfActive();
         },
         editItem(type, id) {
             const items = type === 'project' ? state.projects : state.categories;
@@ -1613,6 +1941,7 @@
             save();
             populateSelects();
             renderSettings();
+            renderVDayIfActive();
         },
         cancelEdit() {
             renderSettings();
@@ -1639,8 +1968,17 @@
     load();
     populateSelects();
     $('#filter-date').value = todayStr();
+    $('#vday-date').value = todayStr();
+    state.vdayDate = todayStr();
 
-    if (location.hash === '#search') {
+    if (location.hash === '#vday') {
+        location.hash = '';
+        $$('.nav-btn').forEach((b) => b.classList.remove('active'));
+        $$('.view').forEach((v) => v.classList.remove('active'));
+        $('[data-view="vday"]').classList.add('active');
+        $('#vday').classList.add('active');
+        renderVDay();
+    } else if (location.hash === '#search') {
         location.hash = '';
         $$('.nav-btn').forEach((b) => b.classList.remove('active'));
         $$('.view').forEach((v) => v.classList.remove('active'));
