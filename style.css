@@ -2071,13 +2071,44 @@ body.vday-resizing {
     }
 
     .vday-scroll {
-        grid-template-columns: 62px minmax(280px, 1fr);
+        --vday-slot-height: 16px;
+        grid-template-columns: 52px minmax(0, 1fr);
         min-height: 520px;
+        width: 100%;
     }
 
     .vday-time-label {
-        right: 9px;
-        font-size: 0.68rem;
+        right: 7px;
+        font-size: 0.64rem;
+    }
+
+    .vday-dropzone {
+        min-width: 0;
+    }
+
+    .vday-event {
+        left: 8px;
+        right: 8px;
+        min-height: 30px;
+        border-radius: 14px;
+    }
+
+    .vday-event-content {
+        padding: 8px 10px 14px;
+    }
+
+    .vday-event strong,
+    .vday-repo-item strong {
+        font-size: 0.84rem;
+    }
+
+    .vday-event small,
+    .vday-repo-item small {
+        font-size: 0.7rem;
+    }
+
+    .vday-event-tags {
+        display: none;
     }
 
     .timer-form,
