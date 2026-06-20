@@ -1926,6 +1926,38 @@ body.vday-resizing {
     box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
 }
 
+.vday-repo-content {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.vday-repo-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 2px;
+}
+
+.vday-repo-edit {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-muted);
+    padding: 5px 10px;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.vday-repo-edit:hover,
+.vday-repo-edit:focus-visible {
+    border-color: var(--accent);
+    color: var(--accent);
+    outline: none;
+}
+
 @media (max-width: 980px) {
     .app {
         padding-top: 20px;
@@ -2105,6 +2137,12 @@ body.vday-resizing {
     .vday-event small,
     .vday-repo-item small {
         font-size: 0.7rem;
+    }
+
+    .vday-repo-edit {
+        width: 100%;
+        min-height: 42px;
+        font-size: 0.78rem;
     }
 
     .vday-event-tags {

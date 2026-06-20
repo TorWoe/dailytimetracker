@@ -425,8 +425,13 @@
         ].filter(Boolean).join(' · ');
 
         return `<div class="vday-repo-item" draggable="true" data-vday-entry-id="${entry.id}" style="--event-color:${color}">
-            <strong>${escHtml(entry.task)}</strong>
-            <small>${escHtml(meta)}</small>
+            <div class="vday-repo-content">
+                <strong>${escHtml(entry.task)}</strong>
+                <small>${escHtml(meta)}</small>
+            </div>
+            <div class="vday-repo-actions">
+                <button type="button" class="vday-repo-edit" draggable="false" onclick="app.editEntry('${entry.id}')">Bearbeiten</button>
+            </div>
         </div>`;
     }
 
@@ -488,7 +493,7 @@
     $('#vday-today')?.addEventListener('click', () => setVDayDate(todayStr()));
 
     document.addEventListener('dragstart', (event) => {
-        if (event.target.closest('.vday-resize-handle')) {
+        if (event.target.closest('.vday-resize-handle, .vday-repo-edit')) {
             event.preventDefault();
             return;
         }
