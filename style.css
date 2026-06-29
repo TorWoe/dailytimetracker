@@ -1024,8 +1024,7 @@ header {
     overflow: hidden;
 }
 
-header::before {
-    content: "Daily Focus";
+.header-kicker {
     display: inline-flex;
     align-items: center;
     padding: 8px 14px;
@@ -1053,13 +1052,16 @@ header h1 {
     font-weight: 800;
 }
 
-.header-top {
+.header-sync {
     position: relative;
     z-index: 2;
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 24px;
+    position: absolute;
+    top: 34px;
+    right: 40px;
+    display: grid;
+    justify-items: end;
+    gap: 14px;
+    max-width: min(42vw, 540px);
 }
 
 .onedrive-actions {
@@ -1146,9 +1148,11 @@ header h1 {
     z-index: 2;
     display: grid;
     gap: 3px;
-    width: min(420px, 100%);
-    margin: -12px 0 22px auto;
-    padding: 12px 14px;
+    width: max-content;
+    max-width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 13px 18px;
     border: 1px solid rgba(37, 99, 235, 0.12);
     border-radius: 18px;
     background: rgba(239, 246, 255, 0.74);
@@ -1168,6 +1172,15 @@ header h1 {
 .sync-panel span {
     font-size: 0.78rem;
     line-height: 1.45;
+}
+
+.sync-panel span[hidden] {
+    display: none;
+}
+
+.sync-panel[data-has-message="true"] {
+    width: min(420px, 100%);
+    padding: 12px 14px;
 }
 
 .sync-panel[data-sync-status="synced"] {
@@ -2096,17 +2109,17 @@ body.vday-resizing {
         border-radius: 28px;
     }
 
-    .header-top {
-        flex-direction: column;
-        gap: 18px;
+    .header-sync {
+        position: relative;
+        top: auto;
+        right: auto;
+        justify-items: start;
+        max-width: none;
+        margin-bottom: 18px;
     }
 
     .onedrive-actions {
         align-self: flex-start;
-    }
-
-    .sync-panel {
-        margin: 0 0 18px;
     }
 
     section.view.active {
@@ -2157,7 +2170,8 @@ body.vday-resizing {
         flex: 1 1 150px;
     }
 
-    .sync-panel {
+    .sync-panel,
+    .sync-panel[data-has-message="true"] {
         width: 100%;
     }
 

@@ -287,7 +287,10 @@
         syncButton.dataset.syncStatus = state.sync.status;
         syncPanel.dataset.syncStatus = state.sync.status;
         syncTitle.textContent = state.sync.title;
-        syncText.textContent = state.sync.message;
+        const compactStatus = state.sync.status === 'synced';
+        syncText.hidden = compactStatus;
+        syncText.textContent = compactStatus ? '' : state.sync.message;
+        syncPanel.dataset.hasMessage = compactStatus ? 'false' : 'true';
         syncButton.disabled = state.sync.busy || !state.sync.account;
         authButton.disabled = state.sync.busy;
         syncButtonLabel.textContent = state.sync.busy ? 'OneDrive ...' : 'OneDrive Sync';
