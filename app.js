@@ -42,7 +42,7 @@
             resuming: false,
             status: 'local',
             title: 'Nicht angemeldet',
-            message: 'Deine Daten werden lokal auf diesem GerÃ¤t gespeichert.',
+            message: 'Deine Daten werden lokal auf diesem Gerät gespeichert.',
             lastRemoteUpdatedAt: '',
             lastRemoteEtag: '',
             hasRemoteData: false,
@@ -335,7 +335,7 @@
                 state.sync.msal.setActiveAccount(state.sync.account);
                 await syncFromOneDrive();
             } else if (hasRecentPendingLogin()) {
-                setSyncStatus('loading', 'Microsoft-Anmeldung', 'Die Anmeldung wird geprÃ¼ft. Falls Microsoft noch offen ist, schlieÃŸe den Tab nach der Zustimmung.');
+                setSyncStatus('loading', 'Microsoft-Anmeldung', 'Die Anmeldung wird geprüft. Falls Microsoft noch offen ist, schließe den Tab nach der Zustimmung.');
             }
         } finally {
             state.sync.busy = false;
@@ -428,10 +428,10 @@
         setSyncStatus('synced', 'Mit OneDrive synchronisiert', 'Deine Time-Tracker-Daten sind im OneDrive-App-Ordner gespeichert.');
     }
 
-    function handleOneDriveError(error, fallbackTitle = 'OneDrive nicht verfÃ¼gbar') {
+    function handleOneDriveError(error, fallbackTitle = 'OneDrive nicht verfügbar') {
         if (error?.message === 'redirect-started') return;
         if (error?.message === 'not-signed-in') {
-            setSyncStatus('local', 'Nicht angemeldet', 'Deine Daten werden lokal auf diesem GerÃ¤t gespeichert.');
+            setSyncStatus('local', 'Nicht angemeldet', 'Deine Daten werden lokal auf diesem Gerät gespeichert.');
             return;
         }
         const message = error?.status === 401 || error?.status === 403
@@ -443,7 +443,7 @@
     async function saveDataToOneDrive() {
         if (!state.sync.account || state.sync.busy) return;
         state.sync.busy = true;
-        setSyncStatus('saving', 'Speichere in OneDrive', 'PrÃ¼fe zuerst, ob dort neuere Daten liegen.');
+        setSyncStatus('saving', 'Speichere in OneDrive', 'Prüfe zuerst, ob dort neuere Daten liegen.');
         try {
             const latest = await loadRemoteData();
             const local = localDataSnapshot(state.localUpdatedAt || nowIso());
@@ -456,7 +456,7 @@
                 state.sync.conflictData = latest;
                 state.sync.lastRemoteUpdatedAt = latest.data.updatedAt || state.sync.lastRemoteUpdatedAt;
                 state.sync.lastRemoteEtag = latest.etag || state.sync.lastRemoteEtag;
-                setSyncStatus('conflict', 'Konflikt erkannt', 'OneDrive enthÃ¤lt neuere Daten. Es wurde nichts Ã¼berschrieben.');
+                setSyncStatus('conflict', 'Konflikt erkannt', 'OneDrive enthält neuere Daten. Es wurde nichts überschrieben.');
                 return;
             }
 
@@ -475,18 +475,18 @@
     let oneDriveSaveTimer;
     function queueOneDriveSave() {
         if (!state.sync.account) {
-            setSyncStatus('local', 'Nicht angemeldet', 'Deine Daten werden lokal auf diesem GerÃ¤t gespeichert.');
+            setSyncStatus('local', 'Nicht angemeldet', 'Deine Daten werden lokal auf diesem Gerät gespeichert.');
             return;
         }
         clearTimeout(oneDriveSaveTimer);
-        setSyncStatus('saving', 'Speichern vorbereitet', 'Die Ã„nderung wird gleich mit OneDrive synchronisiert.');
+        setSyncStatus('saving', 'Speichern vorbereitet', 'Die Änderung wird gleich mit OneDrive synchronisiert.');
         oneDriveSaveTimer = setTimeout(() => { void saveDataToOneDrive(); }, 650);
     }
 
     async function manualSyncOneDrive() {
         if (!state.sync.account || state.sync.busy) return;
         state.sync.busy = true;
-        setSyncStatus('loading', 'PrÃ¼fe OneDrive', 'Deine Time-Tracker-Daten werden abgeglichen.');
+        setSyncStatus('loading', 'Prüfe OneDrive', 'Deine Time-Tracker-Daten werden abgeglichen.');
         try {
             const remote = state.sync.conflictData || await loadRemoteData();
             const local = localDataSnapshot(state.localUpdatedAt || nowIso());
@@ -496,7 +496,7 @@
                     const payload = localDataSnapshot(local.updatedAt || nowIso());
                     const metadata = await uploadRemoteData(payload);
                     completeRemoteSave(payload, metadata);
-                    setSyncStatus('synced', 'Lokale Daten Ã¼bernommen', 'Lokale Daten wurden nach OneDrive Ã¼bertragen.');
+                    setSyncStatus('synced', 'Lokale Daten übernommen', 'Lokale Daten wurden nach OneDrive übertragen.');
                 } else {
                     setSyncStatus('synced', 'Mit OneDrive verbunden', 'Noch keine Time-Tracker-Daten im OneDrive-App-Ordner.');
                 }
@@ -513,7 +513,7 @@
 
             if (remoteIsNewer(remote.data.updatedAt, local.updatedAt) || state.sync.conflictData) {
                 applyRemoteData(remote.data, remote.etag);
-                setSyncStatus('synced', 'OneDrive-Daten geladen', 'Neuere OneDrive-Daten wurden Ã¼bernommen.');
+                setSyncStatus('synced', 'OneDrive-Daten geladen', 'Neuere OneDrive-Daten wurden übernommen.');
                 return;
             }
 
@@ -528,7 +528,7 @@
             state.sync.conflictData = remote;
             state.sync.lastRemoteUpdatedAt = remote.data.updatedAt || state.sync.lastRemoteUpdatedAt;
             state.sync.lastRemoteEtag = remote.etag || state.sync.lastRemoteEtag;
-            setSyncStatus('conflict', 'Unterschiedliche Daten', 'Lokale und OneDrive-Daten unterscheiden sich. Es wurde nichts Ã¼berschrieben.');
+            setSyncStatus('conflict', 'Unterschiedliche Daten', 'Lokale und OneDrive-Daten unterscheiden sich. Es wurde nichts überschrieben.');
         } catch (error) {
             handleOneDriveError(error, 'Synchronisieren fehlgeschlagen');
         } finally {
@@ -540,7 +540,7 @@
     async function syncFromOneDrive({ forceRemote = false } = {}) {
         if (!state.sync.account || state.sync.busy) return;
         state.sync.busy = true;
-        setSyncStatus('loading', 'PrÃ¼fe OneDrive', 'Deine Time-Tracker-Daten werden geladen.');
+        setSyncStatus('loading', 'Prüfe OneDrive', 'Deine Time-Tracker-Daten werden geladen.');
         try {
             const remote = forceRemote && state.sync.conflictData ? state.sync.conflictData : await loadRemoteData();
             const local = localDataSnapshot(state.localUpdatedAt || nowIso());
@@ -550,7 +550,7 @@
                     const payload = localDataSnapshot(local.updatedAt || nowIso());
                     const metadata = await uploadRemoteData(payload);
                     completeRemoteSave(payload, metadata);
-                    setSyncStatus('synced', 'Lokale Daten Ã¼bernommen', 'Vorhandene lokale Daten wurden nach OneDrive Ã¼bertragen.');
+                    setSyncStatus('synced', 'Lokale Daten übernommen', 'Vorhandene lokale Daten wurden nach OneDrive übertragen.');
                 } else {
                     state.sync.hasRemoteData = false;
                     setSyncStatus('synced', 'Mit OneDrive verbunden', 'Noch keine Time-Tracker-Daten im OneDrive-App-Ordner.');
@@ -568,7 +568,7 @@
             state.sync.lastRemoteEtag = remote.etag || '';
             state.sync.hasRemoteData = true;
             state.sync.conflictData = remote;
-            setSyncStatus('conflict', 'Unterschiedliche Daten', 'Lokale und OneDrive-Daten unterscheiden sich. Es wurde nichts Ã¼berschrieben.');
+            setSyncStatus('conflict', 'Unterschiedliche Daten', 'Lokale und OneDrive-Daten unterscheiden sich. Es wurde nichts überschrieben.');
         } catch (error) {
             handleOneDriveError(error);
         } finally {
@@ -611,7 +611,7 @@
                     postLogoutRedirectUri: MSAL_CONFIG.auth.redirectUri,
                 });
             } else {
-                setSyncStatus('local', 'Nicht angemeldet', 'Deine Daten werden lokal auf diesem GerÃ¤t gespeichert.');
+                setSyncStatus('local', 'Nicht angemeldet', 'Deine Daten werden lokal auf diesem Gerät gespeichert.');
             }
         } catch {
             setSyncStatus('error', 'Abmeldung fehlgeschlagen', 'Microsoft-Abmeldung konnte nicht abgeschlossen werden.');
@@ -624,7 +624,7 @@
     async function initializeOneDrive() {
         renderSyncStatus();
         if (!window.msal?.PublicClientApplication) {
-            setSyncStatus('error', 'OneDrive nicht verfÃ¼gbar', 'MSAL.js konnte nicht geladen werden. Lokale Speicherung bleibt aktiv.');
+            setSyncStatus('error', 'OneDrive nicht verfügbar', 'MSAL.js konnte nicht geladen werden. Lokale Speicherung bleibt aktiv.');
             return;
         }
 
@@ -641,7 +641,7 @@
                 state.sync.msal.setActiveAccount(state.sync.account);
                 await syncFromOneDrive();
             } else {
-                setSyncStatus('local', 'Nicht angemeldet', 'Deine Daten werden lokal auf diesem GerÃ¤t gespeichert. Melde dich an, um OneDrive zu nutzen.');
+                setSyncStatus('local', 'Nicht angemeldet', 'Deine Daten werden lokal auf diesem Gerät gespeichert. Melde dich an, um OneDrive zu nutzen.');
             }
         } catch (error) {
             const accounts = state.sync.msal?.getAllAccounts?.() || [];
@@ -649,7 +649,7 @@
             if (state.sync.account) {
                 clearLoginPending();
                 state.sync.msal.setActiveAccount(state.sync.account);
-                setSyncStatus('loading', 'Microsoft-Anmeldung erkannt', 'OneDrive wird erneut geprÃ¼ft.');
+                setSyncStatus('loading', 'Microsoft-Anmeldung erkannt', 'OneDrive wird erneut geprüft.');
                 await syncFromOneDrive();
             } else {
                 setSyncStatus('error', 'Anmeldung fehlgeschlagen', explainAuthError(error));
