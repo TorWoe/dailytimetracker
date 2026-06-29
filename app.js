@@ -332,10 +332,10 @@
             { command: 'bold', label: 'B', title: 'Fett' },
             { command: 'italic', label: 'I', title: 'Kursiv' },
             { command: 'underline', label: 'U', title: 'Unterstreichen' },
-            { command: 'insertUnorderedList', label: '*', title: 'Aufzählung' },
+            { command: 'insertUnorderedList', label: '•', title: 'Aufzählung' },
             { command: 'insertOrderedList', label: '1.', title: 'Nummerierte Liste' },
-            { command: 'outdent', label: '<', title: 'Weniger einrücken' },
-            { command: 'indent', label: '>', title: 'Einrücken' },
+            { command: 'outdent', label: '←', title: 'Weniger einrücken' },
+            { command: 'indent', label: '→', title: 'Einrücken' },
             { command: 'removeFormat', label: 'Tx', title: 'Formatierung entfernen' },
         ].forEach(({ command, label, title }) => {
             const formatBtn = document.createElement('button');
