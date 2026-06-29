@@ -1,12 +1,53 @@
 (function () {
     'use strict';
 
+    const STORAGE_KEYS = {
+        entries: 'dtt_entries',
+        projects: 'dtt_projects',
+        categories: 'dtt_categories',
+        tips: 'dtt_tips',
+    };
+    const STORAGE_META_KEY = 'dtt_sync_meta';
+    const PENDING_LOGIN_KEY = 'dtt_onedrive_login_pending';
+    const APP_DATA_FILE_NAME = 'dailytimetracker-data.json';
+    const GRAPH_BASE_URL = 'https://graph.microsoft.com/v1.0';
+    const GRAPH_FILE_PATH = `/me/drive/special/approot:/${APP_DATA_FILE_NAME}`;
+    const GRAPH_CONTENT_PATH = `${GRAPH_FILE_PATH}:/content`;
+    const GRAPH_SCOPES = ['User.Read', 'Files.ReadWrite.AppFolder'];
+    const LOGIN_REQUEST = { scopes: GRAPH_SCOPES };
+    const MSAL_CONFIG = {
+        auth: {
+            clientId: '01d80b57-6a01-448d-ac58-d7a566a16673',
+            authority: 'https://login.microsoftonline.com/common',
+            redirectUri: window.location.origin + window.location.pathname,
+        },
+        cache: {
+            cacheLocation: 'localStorage',
+            storeAuthStateInCookie: false,
+        },
+    };
+
     // ── State ──
     const state = {
         entries: [],
         projects: [],
         categories: [],
         tips: [],
+        localUpdatedAt: '',
+        sync: {
+            msal: null,
+            account: null,
+            initialized: false,
+            busy: false,
+            resuming: false,
+            status: 'local',
+            title: 'Nicht angemeldet',
+            message: 'Deine Daten werden lokal auf diesem GerÃ¤t gespeichert.',
+            lastRemoteUpdatedAt: '',
+            lastRemoteEtag: '',
+            hasRemoteData: false,
+            conflictData: null,
+        },
         timer: { running: false, paused: false, startTime: null, elapsed: 0, interval: null },
         reportPeriod: 'day',
         reportOffset: 0,
@@ -31,24 +72,35 @@
     }
 
     // ── LocalStorage ──
+    function saveLocalData(updatedAt = nowIso()) {
+        localStorage.setItem(STORAGE_KEYS.entries, JSON.stringify(state.entries));
+        localStorage.setItem(STORAGE_KEYS.projects, JSON.stringify(state.projects));
+        localStorage.setItem(STORAGE_KEYS.categories, JSON.stringify(state.categories));
+        localStorage.setItem(STORAGE_KEYS.tips, JSON.stringify(state.tips));
+        localStorage.setItem(STORAGE_META_KEY, JSON.stringify({ updatedAt }));
+        state.localUpdatedAt = updatedAt;
+        return localDataSnapshot(updatedAt);
+    }
+
     function save() {
-        localStorage.setItem('dtt_entries', JSON.stringify(state.entries));
-        localStorage.setItem('dtt_projects', JSON.stringify(state.projects));
-        localStorage.setItem('dtt_categories', JSON.stringify(state.categories));
-        localStorage.setItem('dtt_tips', JSON.stringify(state.tips));
+        saveLocalData();
+        queueOneDriveSave();
     }
 
     function load() {
         try {
-            state.entries = migrateEntries(JSON.parse(localStorage.getItem('dtt_entries')) || []);
-            state.projects = JSON.parse(localStorage.getItem('dtt_projects')) || [];
-            state.categories = JSON.parse(localStorage.getItem('dtt_categories')) || [];
-            state.tips = JSON.parse(localStorage.getItem('dtt_tips')) || [];
+            state.entries = migrateEntries(JSON.parse(localStorage.getItem(STORAGE_KEYS.entries)) || []);
+            state.projects = JSON.parse(localStorage.getItem(STORAGE_KEYS.projects)) || [];
+            state.categories = JSON.parse(localStorage.getItem(STORAGE_KEYS.categories)) || [];
+            state.tips = JSON.parse(localStorage.getItem(STORAGE_KEYS.tips)) || [];
+            const meta = JSON.parse(localStorage.getItem(STORAGE_META_KEY) || '{}');
+            state.localUpdatedAt = typeof meta.updatedAt === 'string' ? meta.updatedAt : '';
         } catch {
             state.entries = [];
             state.projects = [];
             state.categories = [];
             state.tips = [];
+            state.localUpdatedAt = '';
         }
         if (state.projects.length === 0) {
             state.projects = [
@@ -67,7 +119,7 @@
         }
         state.projects.sort((a, b) => a.name.localeCompare(b.name, 'de'));
         state.categories.sort((a, b) => a.name.localeCompare(b.name, 'de'));
-        save();
+        saveLocalData(state.localUpdatedAt || nowIso());
     }
 
     // ── Helpers ──
@@ -113,6 +165,10 @@
         return new Date().toISOString().slice(0, 10);
     }
 
+    function nowIso() {
+        return new Date().toISOString();
+    }
+
     function nowStr() {
         const d = new Date();
         const date = d.toISOString().slice(0, 10);
@@ -144,6 +200,461 @@
     function clearSummaryCards(targetSel) {
         const el = $(targetSel);
         if (el) el.innerHTML = '';
+    }
+
+    function localDataSnapshot(updatedAt = state.localUpdatedAt || nowIso()) {
+        return {
+            app: 'dailytimetracker',
+            version: 1,
+            updatedAt,
+            entries: migrateEntries(Array.isArray(state.entries) ? state.entries : []),
+            projects: Array.isArray(state.projects) ? state.projects : [],
+            categories: Array.isArray(state.categories) ? state.categories : [],
+            tips: Array.isArray(state.tips) ? state.tips : [],
+        };
+    }
+
+    function parseRemoteData(data) {
+        if (!data || typeof data !== 'object') return null;
+        return {
+            app: 'dailytimetracker',
+            version: Number(data.version) || 1,
+            updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : '',
+            entries: migrateEntries(Array.isArray(data.entries) ? data.entries : []),
+            projects: Array.isArray(data.projects) ? data.projects : [],
+            categories: Array.isArray(data.categories) ? data.categories : [],
+            tips: Array.isArray(data.tips) ? data.tips : [],
+        };
+    }
+
+    function hasTrackerData(data) {
+        return Boolean(
+            data
+            && (
+                data.entries?.length
+                || data.projects?.length
+                || data.categories?.length
+                || data.tips?.length
+            )
+        );
+    }
+
+    function comparableData(data) {
+        const normalized = parseRemoteData(data) || localDataSnapshot('');
+        return JSON.stringify({
+            entries: normalized.entries,
+            projects: normalized.projects,
+            categories: normalized.categories,
+            tips: normalized.tips,
+        });
+    }
+
+    function sameTrackerData(left, right) {
+        return comparableData(left) === comparableData(right);
+    }
+
+    function remoteIsNewer(remoteUpdatedAt, knownUpdatedAt) {
+        if (!remoteUpdatedAt || !knownUpdatedAt) return false;
+        return Date.parse(remoteUpdatedAt) > Date.parse(knownUpdatedAt);
+    }
+
+    function renderAfterDataChange() {
+        populateSelects();
+        renderVDayIfActive();
+        if ($('#entries')?.classList.contains('active')) renderEntries();
+        if ($('#reports')?.classList.contains('active')) renderReports();
+        if ($('#search')?.classList.contains('active')) initSearchMultiSelects();
+        if ($('#tips')?.classList.contains('active')) renderTips();
+        if ($('#settings')?.classList.contains('active')) renderSettings();
+    }
+
+    function setSyncStatus(status, title, message) {
+        state.sync.status = status;
+        state.sync.title = title;
+        state.sync.message = message;
+        renderSyncStatus();
+    }
+
+    function renderSyncStatus() {
+        const syncButton = $('#syncButton');
+        const authButton = $('#syncAuthButton');
+        const syncPanel = $('#syncPanel');
+        const syncTitle = $('#syncStatusTitle');
+        const syncText = $('#syncStatusText');
+        const syncButtonLabel = $('#syncButtonLabel');
+        if (!syncButton || !authButton || !syncPanel || !syncTitle || !syncText || !syncButtonLabel) return;
+
+        syncButton.dataset.syncStatus = state.sync.status;
+        syncPanel.dataset.syncStatus = state.sync.status;
+        syncTitle.textContent = state.sync.title;
+        syncText.textContent = state.sync.message;
+        syncButton.disabled = state.sync.busy || !state.sync.account;
+        authButton.disabled = state.sync.busy;
+        syncButtonLabel.textContent = state.sync.busy ? 'OneDrive ...' : 'OneDrive Sync';
+        authButton.textContent = state.sync.account ? 'OneDrive Logout' : 'OneDrive Login';
+    }
+
+    function explainAuthError(error) {
+        const text = `${error?.errorCode || ''} ${error?.message || ''}`.toLowerCase();
+        if (text.includes('redirect-started')) return 'Du wirst zu Microsoft weitergeleitet.';
+        if (text.includes('user_cancelled') || text.includes('cancel')) return 'Anmeldung oder Zustimmung wurde abgebrochen.';
+        if (text.includes('consent') || text.includes('access_denied')) return 'Zustimmung verweigert. OneDrive-Sync bleibt ausgeschaltet.';
+        if (text.includes('interaction_required')) return 'Bitte melde dich erneut an, damit OneDrive verwendet werden darf.';
+        return 'Microsoft-Anmeldung fehlgeschlagen. Deine Daten bleiben lokal gespeichert.';
+    }
+
+    function markLoginPending() {
+        localStorage.setItem(PENDING_LOGIN_KEY, String(Date.now()));
+    }
+
+    function clearLoginPending() {
+        localStorage.removeItem(PENDING_LOGIN_KEY);
+    }
+
+    function hasRecentPendingLogin() {
+        const startedAt = Number(localStorage.getItem(PENDING_LOGIN_KEY) || 0);
+        return startedAt > 0 && Date.now() - startedAt < 10 * 60 * 1000;
+    }
+
+    async function resumeOneDriveSession() {
+        if (!state.sync.msal || state.sync.resuming) return;
+        if (state.sync.account && state.sync.status !== 'loading') return;
+        if (!hasRecentPendingLogin() && state.sync.status !== 'loading') return;
+
+        state.sync.resuming = true;
+        state.sync.busy = false;
+        try {
+            const redirectResponse = await state.sync.msal.handleRedirectPromise().catch(() => null);
+            const accounts = state.sync.msal.getAllAccounts();
+            state.sync.account = redirectResponse?.account || accounts[0] || null;
+            if (state.sync.account) {
+                clearLoginPending();
+                state.sync.msal.setActiveAccount(state.sync.account);
+                await syncFromOneDrive();
+            } else if (hasRecentPendingLogin()) {
+                setSyncStatus('loading', 'Microsoft-Anmeldung', 'Die Anmeldung wird geprÃ¼ft. Falls Microsoft noch offen ist, schlieÃŸe den Tab nach der Zustimmung.');
+            }
+        } finally {
+            state.sync.busy = false;
+            state.sync.resuming = false;
+            renderSyncStatus();
+        }
+    }
+
+    function scheduleOneDriveResumeChecks() {
+        [2500, 7000, 14000].forEach((delay) => {
+            setTimeout(() => { void resumeOneDriveSession(); }, delay);
+        });
+    }
+
+    async function getGraphToken() {
+        if (!state.sync.account) throw new Error('not-signed-in');
+        const request = { ...LOGIN_REQUEST, account: state.sync.account };
+        try {
+            const response = await state.sync.msal.acquireTokenSilent(request);
+            return response.accessToken;
+        } catch {
+            setSyncStatus('loading', 'Microsoft-Anmeldung', 'Du wirst zu Microsoft weitergeleitet.');
+            await state.sync.msal.acquireTokenRedirect({ ...request, redirectStartPage: window.location.href });
+            throw new Error('redirect-started');
+        }
+    }
+
+    async function graphFetch(path, options = {}) {
+        const token = await getGraphToken();
+        const response = await fetch(`${GRAPH_BASE_URL}${path}`, {
+            ...options,
+            headers: {
+                Authorization: `Bearer ${token}`,
+                ...(options.headers || {}),
+            },
+        });
+        if (response.status === 404) return null;
+        if (!response.ok) {
+            const detail = await response.text().catch(() => '');
+            const error = new Error(detail || `Graph request failed: ${response.status}`);
+            error.status = response.status;
+            throw error;
+        }
+        return response;
+    }
+
+    async function loadRemoteData() {
+        const metadataResponse = await graphFetch(GRAPH_FILE_PATH);
+        if (!metadataResponse) return { exists: false, data: null, etag: '' };
+        const metadata = await metadataResponse.json();
+        const contentResponse = await graphFetch(GRAPH_CONTENT_PATH, { cache: 'no-store' });
+        if (!contentResponse) return { exists: false, data: null, etag: metadata.eTag || '' };
+        const data = parseRemoteData(await contentResponse.json());
+        return {
+            exists: Boolean(data),
+            data,
+            etag: metadata.eTag || '',
+        };
+    }
+
+    async function uploadRemoteData(payload) {
+        const response = await graphFetch(GRAPH_CONTENT_PATH, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json;charset=utf-8' },
+            body: JSON.stringify(payload, null, 2),
+        });
+        return response ? response.json() : null;
+    }
+
+    function applyRemoteData(remoteData, remoteEtag = '') {
+        const parsed = parseRemoteData(remoteData);
+        if (!parsed) return;
+        state.entries = parsed.entries;
+        state.projects = parsed.projects;
+        state.categories = parsed.categories;
+        state.tips = parsed.tips;
+        saveLocalData(parsed.updatedAt || nowIso());
+        state.sync.lastRemoteUpdatedAt = parsed.updatedAt || state.localUpdatedAt;
+        state.sync.lastRemoteEtag = remoteEtag;
+        state.sync.hasRemoteData = true;
+        state.sync.conflictData = null;
+        renderAfterDataChange();
+    }
+
+    function completeRemoteSave(payload, metadata) {
+        state.sync.lastRemoteUpdatedAt = payload.updatedAt;
+        state.sync.lastRemoteEtag = metadata?.eTag || state.sync.lastRemoteEtag;
+        state.sync.hasRemoteData = true;
+        state.sync.conflictData = null;
+        setSyncStatus('synced', 'Mit OneDrive synchronisiert', 'Deine Time-Tracker-Daten sind im OneDrive-App-Ordner gespeichert.');
+    }
+
+    function handleOneDriveError(error, fallbackTitle = 'OneDrive nicht verfÃ¼gbar') {
+        if (error?.message === 'redirect-started') return;
+        if (error?.message === 'not-signed-in') {
+            setSyncStatus('local', 'Nicht angemeldet', 'Deine Daten werden lokal auf diesem GerÃ¤t gespeichert.');
+            return;
+        }
+        const message = error?.status === 401 || error?.status === 403
+            ? 'Zugriff auf OneDrive wurde nicht erlaubt. Bitte erneut anmelden.'
+            : 'OneDrive konnte nicht erreicht werden. Lokale Daten bleiben erhalten.';
+        setSyncStatus('error', fallbackTitle, message);
+    }
+
+    async function saveDataToOneDrive() {
+        if (!state.sync.account || state.sync.busy) return;
+        state.sync.busy = true;
+        setSyncStatus('saving', 'Speichere in OneDrive', 'PrÃ¼fe zuerst, ob dort neuere Daten liegen.');
+        try {
+            const latest = await loadRemoteData();
+            const local = localDataSnapshot(state.localUpdatedAt || nowIso());
+            if (
+                latest.exists
+                && state.sync.lastRemoteUpdatedAt
+                && remoteIsNewer(latest.data.updatedAt, state.sync.lastRemoteUpdatedAt)
+                && !sameTrackerData(latest.data, local)
+            ) {
+                state.sync.conflictData = latest;
+                state.sync.lastRemoteUpdatedAt = latest.data.updatedAt || state.sync.lastRemoteUpdatedAt;
+                state.sync.lastRemoteEtag = latest.etag || state.sync.lastRemoteEtag;
+                setSyncStatus('conflict', 'Konflikt erkannt', 'OneDrive enthÃ¤lt neuere Daten. Es wurde nichts Ã¼berschrieben.');
+                return;
+            }
+
+            const payload = localDataSnapshot(nowIso());
+            saveLocalData(payload.updatedAt);
+            const metadata = await uploadRemoteData(payload);
+            completeRemoteSave(payload, metadata);
+        } catch (error) {
+            handleOneDriveError(error, 'Speichern fehlgeschlagen');
+        } finally {
+            state.sync.busy = false;
+            renderSyncStatus();
+        }
+    }
+
+    let oneDriveSaveTimer;
+    function queueOneDriveSave() {
+        if (!state.sync.account) {
+            setSyncStatus('local', 'Nicht angemeldet', 'Deine Daten werden lokal auf diesem GerÃ¤t gespeichert.');
+            return;
+        }
+        clearTimeout(oneDriveSaveTimer);
+        setSyncStatus('saving', 'Speichern vorbereitet', 'Die Ã„nderung wird gleich mit OneDrive synchronisiert.');
+        oneDriveSaveTimer = setTimeout(() => { void saveDataToOneDrive(); }, 650);
+    }
+
+    async function manualSyncOneDrive() {
+        if (!state.sync.account || state.sync.busy) return;
+        state.sync.busy = true;
+        setSyncStatus('loading', 'PrÃ¼fe OneDrive', 'Deine Time-Tracker-Daten werden abgeglichen.');
+        try {
+            const remote = state.sync.conflictData || await loadRemoteData();
+            const local = localDataSnapshot(state.localUpdatedAt || nowIso());
+
+            if (!remote.exists) {
+                if (hasTrackerData(local)) {
+                    const payload = localDataSnapshot(local.updatedAt || nowIso());
+                    const metadata = await uploadRemoteData(payload);
+                    completeRemoteSave(payload, metadata);
+                    setSyncStatus('synced', 'Lokale Daten Ã¼bernommen', 'Lokale Daten wurden nach OneDrive Ã¼bertragen.');
+                } else {
+                    setSyncStatus('synced', 'Mit OneDrive verbunden', 'Noch keine Time-Tracker-Daten im OneDrive-App-Ordner.');
+                }
+                return;
+            }
+
+            if (sameTrackerData(remote.data, local)) {
+                state.sync.lastRemoteUpdatedAt = remote.data.updatedAt || state.sync.lastRemoteUpdatedAt;
+                state.sync.lastRemoteEtag = remote.etag || state.sync.lastRemoteEtag;
+                state.sync.conflictData = null;
+                setSyncStatus('synced', 'Mit OneDrive synchronisiert', 'Deine Time-Tracker-Daten sind aktuell.');
+                return;
+            }
+
+            if (remoteIsNewer(remote.data.updatedAt, local.updatedAt) || state.sync.conflictData) {
+                applyRemoteData(remote.data, remote.etag);
+                setSyncStatus('synced', 'OneDrive-Daten geladen', 'Neuere OneDrive-Daten wurden Ã¼bernommen.');
+                return;
+            }
+
+            if (remoteIsNewer(local.updatedAt, remote.data.updatedAt)) {
+                const payload = localDataSnapshot(nowIso());
+                saveLocalData(payload.updatedAt);
+                const metadata = await uploadRemoteData(payload);
+                completeRemoteSave(payload, metadata);
+                return;
+            }
+
+            state.sync.conflictData = remote;
+            state.sync.lastRemoteUpdatedAt = remote.data.updatedAt || state.sync.lastRemoteUpdatedAt;
+            state.sync.lastRemoteEtag = remote.etag || state.sync.lastRemoteEtag;
+            setSyncStatus('conflict', 'Unterschiedliche Daten', 'Lokale und OneDrive-Daten unterscheiden sich. Es wurde nichts Ã¼berschrieben.');
+        } catch (error) {
+            handleOneDriveError(error, 'Synchronisieren fehlgeschlagen');
+        } finally {
+            state.sync.busy = false;
+            renderSyncStatus();
+        }
+    }
+
+    async function syncFromOneDrive({ forceRemote = false } = {}) {
+        if (!state.sync.account || state.sync.busy) return;
+        state.sync.busy = true;
+        setSyncStatus('loading', 'PrÃ¼fe OneDrive', 'Deine Time-Tracker-Daten werden geladen.');
+        try {
+            const remote = forceRemote && state.sync.conflictData ? state.sync.conflictData : await loadRemoteData();
+            const local = localDataSnapshot(state.localUpdatedAt || nowIso());
+
+            if (!remote.exists) {
+                if (hasTrackerData(local)) {
+                    const payload = localDataSnapshot(local.updatedAt || nowIso());
+                    const metadata = await uploadRemoteData(payload);
+                    completeRemoteSave(payload, metadata);
+                    setSyncStatus('synced', 'Lokale Daten Ã¼bernommen', 'Vorhandene lokale Daten wurden nach OneDrive Ã¼bertragen.');
+                } else {
+                    state.sync.hasRemoteData = false;
+                    setSyncStatus('synced', 'Mit OneDrive verbunden', 'Noch keine Time-Tracker-Daten im OneDrive-App-Ordner.');
+                }
+                return;
+            }
+
+            if (forceRemote || sameTrackerData(remote.data, local) || !hasTrackerData(local) || remoteIsNewer(remote.data.updatedAt, local.updatedAt)) {
+                applyRemoteData(remote.data, remote.etag);
+                setSyncStatus('synced', 'Mit OneDrive synchronisiert', 'Deine Time-Tracker-Daten wurden aus OneDrive geladen.');
+                return;
+            }
+
+            state.sync.lastRemoteUpdatedAt = remote.data.updatedAt || '';
+            state.sync.lastRemoteEtag = remote.etag || '';
+            state.sync.hasRemoteData = true;
+            state.sync.conflictData = remote;
+            setSyncStatus('conflict', 'Unterschiedliche Daten', 'Lokale und OneDrive-Daten unterscheiden sich. Es wurde nichts Ã¼berschrieben.');
+        } catch (error) {
+            handleOneDriveError(error);
+        } finally {
+            state.sync.busy = false;
+            renderSyncStatus();
+        }
+    }
+
+    async function loginToOneDrive() {
+        if (!state.sync.msal || state.sync.busy) return;
+        state.sync.busy = true;
+        markLoginPending();
+        scheduleOneDriveResumeChecks();
+        setSyncStatus('loading', 'Microsoft-Anmeldung', 'Du wirst zu Microsoft weitergeleitet.');
+        try {
+            await state.sync.msal.loginRedirect({ ...LOGIN_REQUEST, redirectStartPage: window.location.href });
+        } catch (error) {
+            setSyncStatus('error', 'Anmeldung fehlgeschlagen', explainAuthError(error));
+        } finally {
+            state.sync.busy = false;
+            renderSyncStatus();
+        }
+    }
+
+    async function logoutFromOneDrive() {
+        if (!state.sync.msal || state.sync.busy) return;
+        state.sync.busy = true;
+        clearLoginPending();
+        setSyncStatus('loading', 'Microsoft-Abmeldung', 'Du wirst von OneDrive abgemeldet.');
+        try {
+            const account = state.sync.account || state.sync.msal.getActiveAccount?.();
+            state.sync.account = null;
+            state.sync.lastRemoteUpdatedAt = '';
+            state.sync.lastRemoteEtag = '';
+            state.sync.hasRemoteData = false;
+            state.sync.conflictData = null;
+            if (account) {
+                await state.sync.msal.logoutRedirect({
+                    account,
+                    postLogoutRedirectUri: MSAL_CONFIG.auth.redirectUri,
+                });
+            } else {
+                setSyncStatus('local', 'Nicht angemeldet', 'Deine Daten werden lokal auf diesem GerÃ¤t gespeichert.');
+            }
+        } catch {
+            setSyncStatus('error', 'Abmeldung fehlgeschlagen', 'Microsoft-Abmeldung konnte nicht abgeschlossen werden.');
+        } finally {
+            state.sync.busy = false;
+            renderSyncStatus();
+        }
+    }
+
+    async function initializeOneDrive() {
+        renderSyncStatus();
+        if (!window.msal?.PublicClientApplication) {
+            setSyncStatus('error', 'OneDrive nicht verfÃ¼gbar', 'MSAL.js konnte nicht geladen werden. Lokale Speicherung bleibt aktiv.');
+            return;
+        }
+
+        try {
+            state.sync.msal = new window.msal.PublicClientApplication(MSAL_CONFIG);
+            if (typeof state.sync.msal.initialize === 'function') {
+                await state.sync.msal.initialize();
+            }
+            const redirectResponse = await state.sync.msal.handleRedirectPromise();
+            const accounts = state.sync.msal.getAllAccounts();
+            state.sync.account = redirectResponse?.account || accounts[0] || null;
+            if (state.sync.account) {
+                clearLoginPending();
+                state.sync.msal.setActiveAccount(state.sync.account);
+                await syncFromOneDrive();
+            } else {
+                setSyncStatus('local', 'Nicht angemeldet', 'Deine Daten werden lokal auf diesem GerÃ¤t gespeichert. Melde dich an, um OneDrive zu nutzen.');
+            }
+        } catch (error) {
+            const accounts = state.sync.msal?.getAllAccounts?.() || [];
+            state.sync.account = accounts[0] || null;
+            if (state.sync.account) {
+                clearLoginPending();
+                state.sync.msal.setActiveAccount(state.sync.account);
+                setSyncStatus('loading', 'Microsoft-Anmeldung erkannt', 'OneDrive wird erneut geprÃ¼ft.');
+                await syncFromOneDrive();
+            } else {
+                setSyncStatus('error', 'Anmeldung fehlgeschlagen', explainAuthError(error));
+            }
+        } finally {
+            state.sync.initialized = true;
+            renderSyncStatus();
+        }
     }
 
     function clamp(value, min, max) {
@@ -1970,6 +2481,26 @@
     };
 
     // ── Init ──
+    $('#syncButton')?.addEventListener('click', () => {
+        if (state.sync.conflictData) {
+            void syncFromOneDrive({ forceRemote: true });
+            return;
+        }
+        if (state.sync.account) {
+            void manualSyncOneDrive();
+        } else {
+            setSyncStatus('local', 'Nicht angemeldet', 'Bitte melde dich zuerst mit OneDrive an.');
+        }
+    });
+
+    $('#syncAuthButton')?.addEventListener('click', () => {
+        if (state.sync.account) {
+            void logoutFromOneDrive();
+        } else {
+            void loginToOneDrive();
+        }
+    });
+
     load();
     populateSelects();
     $('#filter-date').value = todayStr();
@@ -2010,4 +2541,5 @@
         updateReportNav();
         renderReports();
     }
+    void initializeOneDrive();
 })();
