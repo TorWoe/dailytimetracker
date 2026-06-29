@@ -182,6 +182,238 @@
         return div.innerHTML;
     }
 
+    const richTextAllowedTags = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'BR', 'DIV', 'P', 'UL', 'OL', 'LI', 'BLOCKQUOTE']);
+    const richTextAllowedAttributes = new Set(['style']);
+
+    function sanitizeRichTextHtml(html) {
+        const template = document.createElement('template');
+        template.innerHTML = html || '';
+
+        function cleanNode(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                return document.createTextNode(node.textContent || '');
+            }
+            if (node.nodeType !== Node.ELEMENT_NODE) {
+                return document.createDocumentFragment();
+            }
+            if (!richTextAllowedTags.has(node.tagName)) {
+                const fragment = document.createDocumentFragment();
+                Array.from(node.childNodes).forEach((child) => {
+                    fragment.appendChild(cleanNode(child));
+                });
+                return fragment;
+            }
+            const element = document.createElement(node.tagName.toLowerCase());
+            Array.from(node.attributes || []).forEach((attr) => {
+                if (richTextAllowedAttributes.has(attr.name.toLowerCase()) && /^margin-left:\s*\d+px;?$/i.test(attr.value.trim())) {
+                    element.setAttribute('style', attr.value.trim());
+                }
+            });
+            Array.from(node.childNodes).forEach((child) => {
+                element.appendChild(cleanNode(child));
+            });
+            return element;
+        }
+
+        const fragment = document.createDocumentFragment();
+        Array.from(template.content.childNodes).forEach((child) => {
+            fragment.appendChild(cleanNode(child));
+        });
+        const wrapper = document.createElement('div');
+        wrapper.appendChild(fragment);
+        return wrapper.innerHTML;
+    }
+
+    function richTextToHtml(value) {
+        const text = String(value || '');
+        const hasAllowedHtml = /<\/?(b|strong|i|em|u|br|div|p|ul|ol|li|blockquote)\b/i.test(text);
+        if (hasAllowedHtml) return sanitizeRichTextHtml(text);
+        return escHtml(text).replace(/\n/g, '<br>');
+    }
+
+    function richTextToPlainText(html) {
+        const div = document.createElement('div');
+        div.innerHTML = sanitizeRichTextHtml(html || '');
+        div.querySelectorAll('br').forEach((br) => br.replaceWith('\n'));
+        div.querySelectorAll('p, div, li, blockquote').forEach((block) => {
+            block.appendChild(document.createTextNode('\n'));
+        });
+        return (div.textContent || '')
+            .replace(/\u00a0/g, ' ')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
+    }
+
+    function getClosestElement(node) {
+        if (!node) return null;
+        return node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+    }
+
+    function getSelectedListItems(editor) {
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0 || !editor.contains(selection.anchorNode)) return [];
+
+        const range = selection.getRangeAt(0);
+        const items = new Set();
+        editor.querySelectorAll('li').forEach((item) => {
+            try {
+                if (range.intersectsNode(item)) items.add(item);
+            } catch {
+                // Ignore detached or unsupported nodes while editing.
+            }
+        });
+
+        [selection.anchorNode, selection.focusNode].forEach((node) => {
+            const item = getClosestElement(node)?.closest('li');
+            if (item && editor.contains(item)) items.add(item);
+        });
+
+        return Array.from(items).sort((a, b) => {
+            if (a === b) return 0;
+            return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+        });
+    }
+
+    function unwrapSelectedListItems(editor) {
+        const selectedItems = getSelectedListItems(editor);
+        if (selectedItems.length === 0) return false;
+
+        const selectedSet = new Set(selectedItems);
+        const lists = Array.from(new Set(selectedItems.map((item) => item.parentElement))).filter(Boolean);
+
+        lists.forEach((list) => {
+            const replacement = document.createDocumentFragment();
+            let activeList = null;
+
+            Array.from(list.children).forEach((child) => {
+                if (child.tagName === 'LI' && selectedSet.has(child)) {
+                    activeList = null;
+                    const plainLine = document.createElement('div');
+                    plainLine.textContent = richTextToPlainText(child.innerHTML);
+                    replacement.appendChild(plainLine);
+                    return;
+                }
+
+                if (!activeList) {
+                    activeList = document.createElement(list.tagName.toLowerCase());
+                    replacement.appendChild(activeList);
+                }
+                activeList.appendChild(child.cloneNode(true));
+            });
+
+            list.replaceWith(replacement);
+        });
+
+        editor.innerHTML = sanitizeRichTextHtml(editor.innerHTML);
+        return true;
+    }
+
+    function clearRichTextFormatting(editor) {
+        editor.focus();
+        document.execCommand('removeFormat', false, null);
+        unwrapSelectedListItems(editor);
+        editor.innerHTML = sanitizeRichTextHtml(editor.innerHTML);
+    }
+
+    function createRichTextField(value, placeholder) {
+        const editorWrap = document.createElement('div');
+        editorWrap.className = 'rich-text-field';
+        const toolbar = document.createElement('div');
+        toolbar.className = 'rich-text-toolbar';
+        const editor = document.createElement('div');
+        editor.className = 'rich-text-editor';
+        editor.contentEditable = 'true';
+        editor.setAttribute('role', 'textbox');
+        editor.setAttribute('aria-multiline', 'true');
+        editor.dataset.placeholder = placeholder || 'Text ...';
+        editor.innerHTML = richTextToHtml(value || '');
+
+        [
+            { command: 'bold', label: 'B', title: 'Fett' },
+            { command: 'italic', label: 'I', title: 'Kursiv' },
+            { command: 'underline', label: 'U', title: 'Unterstreichen' },
+            { command: 'insertUnorderedList', label: '*', title: 'Aufzählung' },
+            { command: 'insertOrderedList', label: '1.', title: 'Nummerierte Liste' },
+            { command: 'outdent', label: '<', title: 'Weniger einrücken' },
+            { command: 'indent', label: '>', title: 'Einrücken' },
+            { command: 'removeFormat', label: 'Tx', title: 'Formatierung entfernen' },
+        ].forEach(({ command, label, title }) => {
+            const formatBtn = document.createElement('button');
+            formatBtn.type = 'button';
+            formatBtn.className = 'rich-text-btn';
+            formatBtn.textContent = label;
+            formatBtn.title = title;
+            formatBtn.addEventListener('mousedown', (e) => e.preventDefault());
+            formatBtn.addEventListener('click', () => {
+                editor.focus();
+                if (command === 'removeFormat') {
+                    clearRichTextFormatting(editor);
+                } else {
+                    document.execCommand(command, false, null);
+                }
+            });
+            toolbar.appendChild(formatBtn);
+        });
+
+        editor.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const html = e.clipboardData.getData('text/html');
+            const text = e.clipboardData.getData('text/plain');
+            if (html) {
+                document.execCommand('insertHTML', false, sanitizeRichTextHtml(html));
+            } else {
+                document.execCommand('insertText', false, text);
+            }
+        });
+        editor.addEventListener('blur', () => {
+            editor.innerHTML = sanitizeRichTextHtml(editor.innerHTML);
+        });
+
+        editorWrap.appendChild(toolbar);
+        editorWrap.appendChild(editor);
+        return editorWrap;
+    }
+
+    function setupRichTextTextarea(target) {
+        const textarea = typeof target === 'string' ? document.querySelector(target) : target;
+        if (!textarea || textarea.dataset.richTextReady === 'true') return textarea;
+
+        const field = createRichTextField(textarea.value, textarea.placeholder);
+        field.classList.add('rich-text-textarea-field');
+        const editor = field.querySelector('.rich-text-editor');
+        const sync = () => {
+            textarea.value = sanitizeRichTextHtml(editor.innerHTML);
+        };
+
+        editor.addEventListener('input', sync);
+        editor.addEventListener('blur', sync);
+        textarea.after(field);
+        textarea.hidden = true;
+        textarea.dataset.richTextReady = 'true';
+        textarea.richTextEditor = editor;
+        textarea.syncRichText = sync;
+        sync();
+        return textarea;
+    }
+
+    function getRichTextTextareaValue(target) {
+        const textarea = setupRichTextTextarea(target);
+        if (!textarea) return '';
+        if (textarea.syncRichText) textarea.syncRichText();
+        return sanitizeRichTextHtml(textarea.value || '');
+    }
+
+    function setRichTextTextareaValue(target, value) {
+        const textarea = setupRichTextTextarea(target);
+        if (!textarea) return;
+        textarea.richTextEditor.innerHTML = richTextToHtml(value || '');
+        textarea.syncRichText();
+    }
+
+    function clearRichTextTextarea(target) {
+        setRichTextTextareaValue(target, '');
+    }
+
     // ── DOM refs ──
     const $ = (sel) => document.querySelector(sel);
     const $$ = (sel) => document.querySelectorAll(sel);
@@ -1853,7 +2085,7 @@
         if (!query) return [];
         return state.tips.filter((t) => {
             const titleMatch = t.title.toLowerCase().includes(query);
-            const textMatch = t.text.toLowerCase().includes(query);
+            const textMatch = richTextToPlainText(t.text || '').toLowerCase().includes(query);
             const tagMatch = (t.tags || []).some((tag) => tag.toLowerCase().includes(query));
             return titleMatch || textMatch || tagMatch;
         });
@@ -2066,7 +2298,7 @@
         return `<div class="entry-card tip-card">
             <div class="entry-info">
                 <div class="entry-task">${escHtml(t.title)}${numBadge}</div>
-                <div class="tip-text">${escHtml(t.text)}</div>
+                <div class="tip-text">${richTextToHtml(t.text)}</div>
                 <div style="margin-top:4px">${tagsHtml}</div>
             </div>
             <div class="entry-actions">
@@ -2098,7 +2330,7 @@
             title: title,
             number: numberVal !== '' ? Number(numberVal) : null,
             tags: $('#tip-tags').value.split(',').map((t) => t.trim()).filter(Boolean),
-            text: $('#tip-text').value.trim(),
+            text: getRichTextTextareaValue('#tip-text'),
             timestamp: new Date().toISOString(),
         };
         state.tips.push(tip);
@@ -2106,7 +2338,7 @@
         $('#tip-title').value = '';
         $('#tip-number').value = '';
         $('#tip-tags').value = '';
-        $('#tip-text').value = '';
+        clearRichTextTextarea('#tip-text');
     });
 
     // Tips CSV Export
@@ -2119,7 +2351,8 @@
         const headers = ['Nummer', 'Überschrift', 'Text', 'Tags'];
         const rows = sorted.map((t) => {
             const num = (t.number !== null && t.number !== undefined && t.number !== '') ? t.number : '';
-            return [num, `"${t.title}"`, `"${t.text.replace(/"/g, '""')}"`, (t.tags || []).join('; ')];
+            const plainText = richTextToPlainText(t.text || '').replace(/"/g, '""');
+            return [num, `"${t.title.replace(/"/g, '""')}"`, `"${plainText}"`, (t.tags || []).join('; ')];
         });
         const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
         const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
@@ -2146,7 +2379,7 @@
         tip.title = title;
         tip.number = numberVal !== '' ? Number(numberVal) : null;
         tip.tags = $('#edit-tip-tags').value.split(',').map((t) => t.trim()).filter(Boolean);
-        tip.text = $('#edit-tip-text').value.trim();
+        tip.text = getRichTextTextareaValue('#edit-tip-text');
         save();
         $('#edit-tip-modal').hidden = true;
         editingTipId = null;
@@ -2472,7 +2705,7 @@
             $('#edit-tip-title').value = tip.title;
             $('#edit-tip-number').value = (tip.number !== null && tip.number !== undefined) ? tip.number : '';
             $('#edit-tip-tags').value = (tip.tags || []).join(', ');
-            $('#edit-tip-text').value = tip.text;
+            setRichTextTextareaValue('#edit-tip-text', tip.text);
             $('#edit-tip-modal').hidden = false;
         },
         deleteTip(id) {
@@ -2506,6 +2739,8 @@
 
     load();
     populateSelects();
+    setupRichTextTextarea('#tip-text');
+    setupRichTextTextarea('#edit-tip-text');
     $('#filter-date').value = todayStr();
     $('#vday-date').value = todayStr();
     state.vdayDate = todayStr();

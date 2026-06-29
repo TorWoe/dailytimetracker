@@ -686,7 +686,8 @@ input::placeholder {
     font-size: 0.9rem;
     color: var(--text-muted);
     margin-top: 4px;
-    white-space: pre-wrap;
+    line-height: 1.7;
+    white-space: normal;
 }
 
 .tip-number {
@@ -721,6 +722,120 @@ input::placeholder {
 
 .tip-form textarea:focus {
     border-color: var(--primary);
+}
+
+.settings-tip-add {
+    align-items: stretch;
+}
+
+.settings-tip-add .tip-number-input,
+.tip-number-input {
+    max-width: 180px;
+}
+
+.rich-text-field {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    min-height: 72px;
+}
+
+.modal-form .rich-text-field {
+    width: 100%;
+}
+
+.rich-text-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.rich-text-btn {
+    width: 36px;
+    min-width: 36px;
+    min-height: 30px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-input);
+    color: var(--text);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 800;
+    transition: border-color 0.2s, color 0.2s, transform 0.2s;
+}
+
+.rich-text-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateY(-1px);
+}
+
+.rich-text-editor {
+    width: 100%;
+    min-height: 96px;
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--bg-input);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    outline: none;
+    font: inherit;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    overflow-y: auto;
+    transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+.rich-text-editor:focus {
+    border-color: var(--primary);
+}
+
+.rich-text-editor:empty::before {
+    content: attr(data-placeholder);
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.rich-text-editor ul,
+.rich-text-editor ol,
+.tip-text ul,
+.tip-text ol {
+    margin: 4px 0 4px 1.35rem;
+    padding-left: 1rem;
+}
+
+.rich-text-editor blockquote,
+.tip-text blockquote {
+    margin: 4px 0 4px 2rem;
+    padding-left: 0;
+    border-left: 0;
+}
+
+.rich-text-editor li,
+.tip-text li {
+    display: list-item;
+    list-style-position: outside;
+    margin-bottom: 4px;
+}
+
+.tip-text p,
+.tip-text div,
+.tip-text blockquote {
+    margin-bottom: 4px;
+}
+
+.tip-text p:last-child,
+.tip-text div:last-child,
+.tip-text blockquote:last-child {
+    margin-bottom: 0;
 }
 
 .search-block-title {
@@ -1801,6 +1916,29 @@ textarea:focus,
     gap: 12px;
 }
 
+.settings-tip-add {
+    flex-direction: column;
+}
+
+.settings-tip-add .tip-number-input,
+.tip-number-input {
+    max-width: 180px;
+}
+
+.rich-text-btn {
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.76);
+    border-color: var(--border-strong);
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
+}
+
+.rich-text-editor {
+    min-height: 104px;
+    border-color: var(--border-strong);
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
 .modal-overlay {
     background: rgba(15, 23, 42, 0.26);
     backdrop-filter: blur(18px);
@@ -2333,10 +2471,47 @@ body.vday-resizing {
     .tip-form input[type="text"],
     .tip-form input[type="number"],
     .tip-form textarea,
+    .rich-text-editor,
     .settings-add input[type="text"] {
         min-height: 48px;
         padding: 10px 12px;
         font-size: 0.95rem;
+    }
+
+    .rich-text-toolbar {
+        gap: 5px;
+    }
+
+    .rich-text-btn {
+        width: 32px;
+        min-width: 32px;
+        min-height: 32px;
+        border-radius: 9px;
+        font-size: 0.78rem;
+    }
+
+    .settings-tip-add .tip-number-input,
+    .tip-number-input {
+        max-width: none;
+        width: 100%;
+    }
+
+    .rich-text-editor {
+        min-height: 96px;
+        border-radius: 14px;
+    }
+
+    .rich-text-editor ul,
+    .rich-text-editor ol,
+    .tip-text ul,
+    .tip-text ol {
+        margin-left: 1rem;
+        padding-left: 0.78rem;
+    }
+
+    .rich-text-editor blockquote,
+    .tip-text blockquote {
+        margin-left: 1.2rem;
     }
 
     .manual-time-row {

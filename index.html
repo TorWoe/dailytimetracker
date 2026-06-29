@@ -308,13 +308,13 @@
                 </div>
             </div>
             <div class="settings-section">
-                <h3>Neuer Tipp</h3>
-                <div class="tip-form">
-                    <input type="text" id="tip-title" placeholder="Überschrift...">
-                    <input type="number" id="tip-number" placeholder="Nummer (optional)" min="0" style="max-width:180px;">
+                <h3>Tipps</h3>
+                <div class="settings-add settings-tip-add tip-form">
+                    <input type="text" id="tip-title" placeholder="Überschrift des Tipps...">
+                    <input type="number" id="tip-number" placeholder="Nr." min="0" step="1" class="tip-number-input">
                     <input type="text" id="tip-tags" placeholder="Tags (kommagetrennt)">
-                    <textarea id="tip-text" placeholder="Text..." rows="3"></textarea>
-                    <button id="btn-add-tip" class="btn btn-primary">Tipp hinzufügen</button>
+                    <textarea id="tip-text" placeholder="Text / Beschreibung des Tipps..." rows="3"></textarea>
+                    <button id="btn-add-tip" class="btn btn-primary">Hinzufügen</button>
                 </div>
             </div>
         </section>
