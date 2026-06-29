@@ -1053,6 +1053,134 @@ header h1 {
     font-weight: 800;
 }
 
+.header-top {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.onedrive-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+
+.sync-button,
+.sync-auth-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    border-radius: 999px;
+    font-size: 0.84rem;
+    font-weight: 700;
+    transition: transform 0.18s ease, border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+}
+
+.sync-button {
+    gap: 8px;
+    padding: 0 13px;
+    border: 1px solid rgba(37, 99, 235, 0.14);
+    color: #2563eb;
+    background: rgba(255, 255, 255, 0.84);
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+}
+
+.sync-auth-button {
+    padding: 0 16px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    color: var(--text);
+    background: rgba(15, 23, 42, 0.045);
+}
+
+.sync-button:hover:not(:disabled),
+.sync-auth-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: rgba(37, 99, 235, 0.32);
+}
+
+.sync-button:disabled,
+.sync-auth-button:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
+
+.sync-icon {
+    display: inline-grid;
+    width: 18px;
+    height: 18px;
+    place-items: center;
+    flex: 0 0 auto;
+}
+
+.sync-icon svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+}
+
+.sync-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #94a3b8;
+}
+
+.sync-button[data-sync-status="synced"] .sync-dot { background: #22c55e; }
+.sync-button[data-sync-status="saving"] .sync-dot,
+.sync-button[data-sync-status="loading"] .sync-dot { background: #f59e0b; }
+.sync-button[data-sync-status="conflict"] .sync-dot,
+.sync-button[data-sync-status="error"] .sync-dot { background: #ef4444; }
+
+.sync-panel {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    gap: 3px;
+    width: min(420px, 100%);
+    margin: -12px 0 22px auto;
+    padding: 12px 14px;
+    border: 1px solid rgba(37, 99, 235, 0.12);
+    border-radius: 18px;
+    background: rgba(239, 246, 255, 0.74);
+    color: var(--text-muted);
+}
+
+.sync-panel strong,
+.sync-panel span {
+    display: block;
+}
+
+.sync-panel strong {
+    color: var(--text);
+    font-size: 0.84rem;
+}
+
+.sync-panel span {
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+.sync-panel[data-sync-status="synced"] {
+    border-color: rgba(34, 197, 94, 0.18);
+    background: rgba(240, 253, 244, 0.78);
+}
+
+.sync-panel[data-sync-status="conflict"],
+.sync-panel[data-sync-status="error"] {
+    border-color: rgba(239, 68, 68, 0.2);
+    background: rgba(254, 242, 242, 0.82);
+}
+
 nav {
     justify-content: flex-start;
     gap: 10px;
@@ -1968,6 +2096,19 @@ body.vday-resizing {
         border-radius: 28px;
     }
 
+    .header-top {
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    .onedrive-actions {
+        align-self: flex-start;
+    }
+
+    .sync-panel {
+        margin: 0 0 18px;
+    }
+
     section.view.active {
         padding: 22px;
         border-radius: 26px;
@@ -2004,6 +2145,20 @@ body.vday-resizing {
     header {
         padding: 20px 22px 18px;
         margin-bottom: 18px;
+    }
+
+    .onedrive-actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .sync-button,
+    .sync-auth-button {
+        flex: 1 1 150px;
+    }
+
+    .sync-panel {
+        width: 100%;
     }
 
     nav {

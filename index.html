@@ -12,7 +12,26 @@
 <body>
     <div class="app">
         <header>
-            <h1>Daily Time Tracker</h1>
+            <div class="header-top">
+                <h1>Daily Time Tracker</h1>
+                <div class="onedrive-actions" aria-label="OneDrive Synchronisierung">
+                    <button class="sync-button" id="syncButton" type="button" disabled>
+                        <span class="sync-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" focusable="false">
+                                <path d="M17.5 18H8a5 5 0 1 1 1.2-9.85A6.5 6.5 0 0 1 21 12a3 3 0 0 1-3.5 6Z"></path>
+                                <path d="M12 13v7M9 16l3-3 3 3"></path>
+                            </svg>
+                        </span>
+                        <span id="syncButtonLabel">OneDrive Sync</span>
+                        <span class="sync-dot" id="syncDot" aria-hidden="true"></span>
+                    </button>
+                    <button class="sync-auth-button" id="syncAuthButton" type="button">OneDrive Login</button>
+                </div>
+            </div>
+            <div class="sync-panel" id="syncPanel" data-sync-status="local">
+                <strong id="syncStatusTitle">Nicht angemeldet</strong>
+                <span id="syncStatusText">Deine Daten werden lokal auf diesem GerÃ¤t gespeichert.</span>
+            </div>
             <nav>
                 <button class="nav-btn active" data-view="tracker">Timer</button>
                 <button class="nav-btn" data-view="vday">vDay</button>
@@ -347,6 +366,7 @@
         </div>
     </div>
 
+    <script src="vendor/msal-browser.min.js?v=2.38.3"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="app.js"></script>
 </body>
