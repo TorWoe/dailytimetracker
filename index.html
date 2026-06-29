@@ -12,9 +12,8 @@
 <body>
     <div class="app">
         <header>
-            <div class="header-top">
-                <h1>Daily Time Tracker</h1>
-                <div class="onedrive-actions" aria-label="OneDrive Synchronisierung">
+            <div class="header-sync" aria-label="OneDrive Synchronisierung">
+                <div class="onedrive-actions">
                     <button class="sync-button" id="syncButton" type="button" disabled>
                         <span class="sync-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24" focusable="false">
@@ -27,11 +26,13 @@
                     </button>
                     <button class="sync-auth-button" id="syncAuthButton" type="button">OneDrive Login</button>
                 </div>
+                <div class="sync-panel" id="syncPanel" data-sync-status="local">
+                    <strong id="syncStatusTitle">Nicht angemeldet</strong>
+                    <span id="syncStatusText">Deine Daten werden lokal auf diesem GerÃ¤t gespeichert.</span>
+                </div>
             </div>
-            <div class="sync-panel" id="syncPanel" data-sync-status="local">
-                <strong id="syncStatusTitle">Nicht angemeldet</strong>
-                <span id="syncStatusText">Deine Daten werden lokal auf diesem GerÃ¤t gespeichert.</span>
-            </div>
+            <div class="header-kicker">Daily Focus</div>
+            <h1>Daily Time Tracker</h1>
             <nav>
                 <button class="nav-btn active" data-view="tracker">Timer</button>
                 <button class="nav-btn" data-view="vday">vDay</button>
