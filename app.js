@@ -2297,10 +2297,11 @@
         const numBadge = (t.number !== null && t.number !== undefined && t.number !== '') ? `<span class="tip-number">${escHtml(String(t.number))}</span>` : '';
         return `<div class="entry-card tip-card">
             <div class="entry-info">
-                <div class="entry-task">${escHtml(t.title)}${numBadge}</div>
+                <div class="entry-task">${escHtml(t.title)}</div>
                 <div class="tip-text">${richTextToHtml(t.text)}</div>
                 <div style="margin-top:4px">${tagsHtml}</div>
             </div>
+            ${numBadge}
             <div class="entry-actions">
                 <button onclick="app.editTip('${t.id}')">Bearbeiten</button>
                 <button onclick="app.deleteTip('${t.id}')">Löschen</button>
