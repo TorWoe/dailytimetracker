@@ -9,10 +9,13 @@
     };
     const STORAGE_META_KEY = 'dtt_sync_meta';
     const PENDING_LOGIN_KEY = 'dtt_onedrive_login_pending';
-    const APP_DATA_FILE_NAME = 'dailytimetracker-data.json';
+    const APP_DATA_FILE_NAMES = {
+        legacy: 'dailytimetracker-data.json',
+        entries: 'dailytimetracker-entries.json',
+        settings: 'dailytimetracker-settings.json',
+        tips: 'dailytimetracker-tips.json',
+    };
     const GRAPH_BASE_URL = 'https://graph.microsoft.com/v1.0';
-    const GRAPH_FILE_PATH = `/me/drive/special/approot:/${APP_DATA_FILE_NAME}`;
-    const GRAPH_CONTENT_PATH = `${GRAPH_FILE_PATH}:/content`;
     const GRAPH_SCOPES = ['User.Read', 'Files.ReadWrite.AppFolder'];
     const LOGIN_REQUEST = { scopes: GRAPH_SCOPES };
     const MSAL_CONFIG = {
@@ -440,13 +443,27 @@
     function localDataSnapshot(updatedAt = state.localUpdatedAt || nowIso()) {
         return {
             app: 'dailytimetracker',
-            version: 1,
+            version: 2,
             updatedAt,
             entries: migrateEntries(Array.isArray(state.entries) ? state.entries : []),
             projects: Array.isArray(state.projects) ? state.projects : [],
             categories: Array.isArray(state.categories) ? state.categories : [],
             tips: Array.isArray(state.tips) ? state.tips : [],
         };
+    }
+
+    function graphFilePath(fileName) {
+        return `/me/drive/special/approot:/${fileName}`;
+    }
+
+    function graphContentPath(fileName) {
+        return `${graphFilePath(fileName)}:/content`;
+    }
+
+    function latestUpdatedAt(...values) {
+        return values
+            .filter((value) => typeof value === 'string' && value && !Number.isNaN(Date.parse(value)))
+            .sort((a, b) => Date.parse(b) - Date.parse(a))[0] || '';
     }
 
     function parseRemoteData(data) {
@@ -459,6 +476,80 @@
             projects: Array.isArray(data.projects) ? data.projects : [],
             categories: Array.isArray(data.categories) ? data.categories : [],
             tips: Array.isArray(data.tips) ? data.tips : [],
+        };
+    }
+
+    function splitRemoteData(data) {
+        const normalized = parseRemoteData(data) || localDataSnapshot('');
+        return {
+            entries: {
+                app: 'dailytimetracker',
+                version: 2,
+                type: 'entries',
+                updatedAt: normalized.updatedAt,
+                entries: normalized.entries,
+            },
+            settings: {
+                app: 'dailytimetracker',
+                version: 2,
+                type: 'settings',
+                updatedAt: normalized.updatedAt,
+                projects: normalized.projects,
+                categories: normalized.categories,
+            },
+            tips: {
+                app: 'dailytimetracker',
+                version: 2,
+                type: 'tips',
+                updatedAt: normalized.updatedAt,
+                tips: normalized.tips,
+            },
+        };
+    }
+
+    function parseEntriesData(data) {
+        if (!data || typeof data !== 'object') return { updatedAt: '', entries: [] };
+        return {
+            updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : '',
+            entries: migrateEntries(Array.isArray(data.entries) ? data.entries : []),
+        };
+    }
+
+    function parseSettingsData(data) {
+        if (!data || typeof data !== 'object') return { updatedAt: '', projects: [], categories: [] };
+        return {
+            updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : '',
+            projects: Array.isArray(data.projects) ? data.projects : [],
+            categories: Array.isArray(data.categories) ? data.categories : [],
+        };
+    }
+
+    function parseTipsData(data) {
+        if (!data || typeof data !== 'object') return { updatedAt: '', tips: [] };
+        return {
+            updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : '',
+            tips: Array.isArray(data.tips) ? data.tips : [],
+        };
+    }
+
+    function composeRemoteData(parts) {
+        const entriesPart = parseEntriesData(parts.entries?.data);
+        const settingsPart = parseSettingsData(parts.settings?.data);
+        const tipsPart = parseTipsData(parts.tips?.data);
+        const updatedAt = latestUpdatedAt(entriesPart.updatedAt, settingsPart.updatedAt, tipsPart.updatedAt);
+        const data = parseRemoteData({
+            app: 'dailytimetracker',
+            version: 2,
+            updatedAt,
+            entries: entriesPart.entries,
+            projects: settingsPart.projects,
+            categories: settingsPart.categories,
+            tips: tipsPart.tips,
+        });
+        return {
+            exists: Boolean(parts.entries?.exists || parts.settings?.exists || parts.tips?.exists),
+            data,
+            etag: [parts.entries?.etag, parts.settings?.etag, parts.tips?.etag].filter(Boolean).join('|'),
         };
     }
 
@@ -617,27 +708,82 @@
         return response;
     }
 
-    async function loadRemoteData() {
-        const metadataResponse = await graphFetch(GRAPH_FILE_PATH);
+    async function loadRemoteJsonFile(fileName) {
+        const metadataResponse = await graphFetch(graphFilePath(fileName));
         if (!metadataResponse) return { exists: false, data: null, etag: '' };
         const metadata = await metadataResponse.json();
-        const contentResponse = await graphFetch(GRAPH_CONTENT_PATH, { cache: 'no-store' });
+        const contentResponse = await graphFetch(graphContentPath(fileName), { cache: 'no-store' });
         if (!contentResponse) return { exists: false, data: null, etag: metadata.eTag || '' };
-        const data = parseRemoteData(await contentResponse.json());
         return {
-            exists: Boolean(data),
-            data,
+            exists: true,
+            data: await contentResponse.json(),
             etag: metadata.eTag || '',
         };
     }
 
-    async function uploadRemoteData(payload) {
-        const response = await graphFetch(GRAPH_CONTENT_PATH, {
+    async function uploadRemoteJsonFile(fileName, payload) {
+        const response = await graphFetch(graphContentPath(fileName), {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json;charset=utf-8' },
             body: JSON.stringify(payload, null, 2),
         });
         return response ? response.json() : null;
+    }
+
+    async function loadRemoteData() {
+        const [entriesFile, settingsFile, tipsFile] = await Promise.all([
+            loadRemoteJsonFile(APP_DATA_FILE_NAMES.entries),
+            loadRemoteJsonFile(APP_DATA_FILE_NAMES.settings),
+            loadRemoteJsonFile(APP_DATA_FILE_NAMES.tips),
+        ]);
+        const composed = composeRemoteData({
+            entries: entriesFile,
+            settings: settingsFile,
+            tips: tipsFile,
+        });
+        const hasAllSplitFiles = entriesFile.exists && settingsFile.exists && tipsFile.exists;
+        if (composed.exists && hasAllSplitFiles) return composed;
+
+        const legacyFile = await loadRemoteJsonFile(APP_DATA_FILE_NAMES.legacy);
+        if (!legacyFile.exists) return composed.exists ? composed : { exists: false, data: null, etag: '' };
+
+        const legacyData = parseRemoteData(legacyFile.data);
+        if (!legacyData) return composed.exists ? composed : { exists: false, data: null, etag: legacyFile.etag || '' };
+
+        const migrationData = parseRemoteData({
+            app: 'dailytimetracker',
+            version: 2,
+            updatedAt: latestUpdatedAt(composed.data?.updatedAt, legacyData.updatedAt) || legacyData.updatedAt,
+            entries: entriesFile.exists ? composed.data.entries : legacyData.entries,
+            projects: settingsFile.exists ? composed.data.projects : legacyData.projects,
+            categories: settingsFile.exists ? composed.data.categories : legacyData.categories,
+            tips: tipsFile.exists ? composed.data.tips : legacyData.tips,
+        });
+        const metadata = await uploadRemoteData(migrationData);
+        return {
+            exists: true,
+            data: migrationData,
+            etag: metadata?.eTag || legacyFile.etag || '',
+            migrated: true,
+        };
+    }
+
+    async function uploadRemoteData(payload) {
+        const normalized = parseRemoteData(payload) || localDataSnapshot(nowIso());
+        const split = splitRemoteData(normalized);
+        const [entriesMeta, settingsMeta, tipsMeta] = await Promise.all([
+            uploadRemoteJsonFile(APP_DATA_FILE_NAMES.entries, split.entries),
+            uploadRemoteJsonFile(APP_DATA_FILE_NAMES.settings, split.settings),
+            uploadRemoteJsonFile(APP_DATA_FILE_NAMES.tips, split.tips),
+        ]);
+        return {
+            eTag: [entriesMeta?.eTag, settingsMeta?.eTag, tipsMeta?.eTag].filter(Boolean).join('|'),
+            files: {
+                entries: entriesMeta,
+                settings: settingsMeta,
+                tips: tipsMeta,
+            },
+        };
     }
 
     function applyRemoteData(remoteData, remoteEtag = '') {
