@@ -2295,17 +2295,17 @@
     function renderTipCard(t) {
         const tagsHtml = (t.tags || []).map((tag) => `<span class="tag">${escHtml(tag)}</span>`).join('');
         const numBadge = (t.number !== null && t.number !== undefined && t.number !== '') ? `<span class="tip-number">${escHtml(String(t.number))}</span>` : '';
-        return `<div class="entry-card tip-card">
+        return `<div class="entry-card tip-card" id="tip-${t.id}">
             <div class="entry-info">
                 <div class="entry-task">${escHtml(t.title)}</div>
                 <div class="tip-text">${richTextToHtml(t.text)}</div>
-                <div style="margin-top:4px">${tagsHtml}</div>
+                <div class="tip-tags-row">${tagsHtml}</div>
+                <div class="entry-actions tip-actions">
+                    <button onclick="app.editTip('${t.id}', this)">Bearbeiten</button>
+                    <button onclick="app.deleteTip('${t.id}')">Löschen</button>
+                </div>
             </div>
             ${numBadge}
-            <div class="entry-actions">
-                <button onclick="app.editTip('${t.id}')">Bearbeiten</button>
-                <button onclick="app.deleteTip('${t.id}')">Löschen</button>
-            </div>
         </div>`;
     }
 
@@ -2699,15 +2699,53 @@
         cancelEdit() {
             renderSettings();
         },
-        editTip(id) {
+        editTip(id, trigger) {
             const tip = state.tips.find((t) => t.id === id);
             if (!tip) return;
-            editingTipId = tip.id;
-            $('#edit-tip-title').value = tip.title;
-            $('#edit-tip-number').value = (tip.number !== null && tip.number !== undefined) ? tip.number : '';
-            $('#edit-tip-tags').value = (tip.tags || []).join(', ');
-            setRichTextTextareaValue('#edit-tip-text', tip.text);
-            $('#edit-tip-modal').hidden = false;
+            const card = trigger?.closest('.tip-card') || $(`#tip-${id}`);
+            if (!card) return;
+            card.classList.add('editing');
+            card.innerHTML = `
+                <div class="tip-edit-form">
+                    <div class="tip-edit-row">
+                        <input type="text" class="edit-tip-title" value="${escHtml(tip.title)}" placeholder="Überschrift...">
+                        <input type="number" class="edit-tip-number tip-number-input" value="${tip.number !== null && tip.number !== undefined && tip.number !== '' ? escHtml(String(tip.number)) : ''}" placeholder="Nr." min="0" step="1">
+                    </div>
+                    <input type="text" class="edit-tip-tags" value="${escHtml((tip.tags || []).join(', '))}" placeholder="Tags (kommagetrennt)">
+                    <textarea class="edit-tip-text" rows="4" placeholder="Text...">${escHtml(tip.text)}</textarea>
+                    <div class="entry-actions tip-actions">
+                        <button onclick="app.saveTip('${id}', this)">Speichern</button>
+                        <button onclick="app.cancelTipEdit()">Abbrechen</button>
+                    </div>
+                </div>`;
+            setupRichTextTextarea(card.querySelector('.edit-tip-text'));
+            card.querySelector('.edit-tip-title').focus();
+        },
+        saveTip(id, trigger) {
+            const card = trigger?.closest('.tip-card') || $(`#tip-${id}`);
+            if (!card) return;
+            const title = card.querySelector('.edit-tip-title').value.trim();
+            if (!title) {
+                alert('Bitte eine Überschrift eingeben.');
+                return;
+            }
+            const numberVal = card.querySelector('.edit-tip-number').value.trim();
+            const number = numberVal !== '' ? Number(numberVal) : null;
+            if (numberVal !== '' && (Number.isNaN(number) || number < 0)) {
+                alert('Bitte eine positive ganze Zahl eingeben.');
+                return;
+            }
+            const tip = state.tips.find((t) => t.id === id);
+            if (!tip) return;
+            tip.title = title;
+            tip.number = number;
+            tip.tags = card.querySelector('.edit-tip-tags').value.split(',').map((t) => t.trim()).filter(Boolean);
+            tip.text = getRichTextTextareaValue(card.querySelector('.edit-tip-text'));
+            save();
+            renderTips();
+        },
+        cancelTipEdit() {
+            renderTips();
         },
         deleteTip(id) {
             if (!confirm('Tipp löschen?')) return;

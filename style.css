@@ -700,6 +700,19 @@ input::placeholder {
     padding-right: 8px;
 }
 
+.tip-tags-row {
+    margin-top: 8px;
+}
+
+.tip-card .tip-actions {
+    justify-content: flex-start;
+    margin-top: 12px;
+}
+
+.tip-card.editing {
+    padding-right: 20px;
+}
+
 .tip-number {
     display: inline-block;
     background: var(--primary);
@@ -709,6 +722,39 @@ input::placeholder {
     font-size: 0.75rem;
     font-weight: 600;
     margin-left: 0;
+}
+
+.tip-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+.tip-edit-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+.tip-edit-form .edit-tip-title,
+.tip-edit-form .edit-tip-tags,
+.tip-edit-form .rich-text-field,
+.tip-edit-form .rich-text-editor {
+    width: 100%;
+}
+
+.tip-edit-form .tip-number-input {
+    width: 78px;
+    max-width: 78px;
+}
+
+.tip-edit-form .tip-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-start;
 }
 
 .tip-form {
@@ -1093,6 +1139,10 @@ input::placeholder {
 
     .tip-card {
         padding-right: 70px;
+    }
+
+    .tip-card.editing {
+        padding-right: 14px;
     }
 
     .tip-number {
@@ -2440,6 +2490,10 @@ body.vday-resizing {
 
     .tip-card {
         padding-right: 70px;
+    }
+
+    .tip-card.editing {
+        padding-right: 14px;
     }
 
     .tip-number {
