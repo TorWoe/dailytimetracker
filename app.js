@@ -62,6 +62,20 @@
     const ENTRY_TYPES = ['erfolgt', 'geplant'];
     const VDAY_STEP_MINUTES = 15;
     const VDAY_DAY_MINUTES = 24 * 60;
+    const DEFAULT_PROJECTS = [
+        { name: 'Arbeit', color: '#4a90d9' },
+        { name: 'Privat', color: '#27ae60' },
+        { name: 'Lernen', color: '#e67e22' },
+    ];
+    const DEFAULT_CATEGORIES = [
+        { name: 'Entwicklung', color: '#9b59b6' },
+        { name: 'Meeting', color: '#e74c3c' },
+        { name: 'Planung', color: '#1abc9c' },
+        { name: 'Sonstiges', color: '#95a5a6' },
+    ];
+    const DEFAULT_TIPS = Array.isArray(window.DAILY_TIME_TRACKER_DEFAULT_TIPS)
+        ? window.DAILY_TIME_TRACKER_DEFAULT_TIPS
+        : [];
 
     function normalizeEntryType(type) {
         return ENTRY_TYPES.includes(type) ? type : 'erfolgt';
@@ -90,7 +104,26 @@
         queueOneDriveSave();
     }
 
+    function cloneWithIds(items) {
+        return items.map((item) => ({ id: uid(), ...item }));
+    }
+
+    function cloneDefaultTips() {
+        return DEFAULT_TIPS.map((tip) => ({ ...tip, tags: Array.isArray(tip.tags) ? [...tip.tags] : [] }));
+    }
+
+    function hasStoredLocalData() {
+        return Boolean(
+            localStorage.getItem(STORAGE_KEYS.entries)
+            || localStorage.getItem(STORAGE_KEYS.projects)
+            || localStorage.getItem(STORAGE_KEYS.categories)
+            || localStorage.getItem(STORAGE_KEYS.tips)
+            || localStorage.getItem(STORAGE_META_KEY)
+        );
+    }
+
     function load() {
+        const isFreshLocalState = !hasStoredLocalData();
         try {
             state.entries = migrateEntries(JSON.parse(localStorage.getItem(STORAGE_KEYS.entries)) || []);
             state.projects = JSON.parse(localStorage.getItem(STORAGE_KEYS.projects)) || [];
@@ -106,19 +139,13 @@
             state.localUpdatedAt = '';
         }
         if (state.projects.length === 0) {
-            state.projects = [
-                { id: uid(), name: 'Arbeit', color: '#4a90d9' },
-                { id: uid(), name: 'Privat', color: '#27ae60' },
-                { id: uid(), name: 'Lernen', color: '#e67e22' },
-            ];
+            state.projects = cloneWithIds(DEFAULT_PROJECTS);
         }
         if (state.categories.length === 0) {
-            state.categories = [
-                { id: uid(), name: 'Entwicklung', color: '#9b59b6' },
-                { id: uid(), name: 'Meeting', color: '#e74c3c' },
-                { id: uid(), name: 'Planung', color: '#1abc9c' },
-                { id: uid(), name: 'Sonstiges', color: '#95a5a6' },
-            ];
+            state.categories = cloneWithIds(DEFAULT_CATEGORIES);
+        }
+        if (isFreshLocalState && state.tips.length === 0) {
+            state.tips = cloneDefaultTips();
         }
         state.projects.sort((a, b) => a.name.localeCompare(b.name, 'de'));
         state.categories.sort((a, b) => a.name.localeCompare(b.name, 'de'));
@@ -477,6 +504,40 @@
             categories: Array.isArray(data.categories) ? data.categories : [],
             tips: Array.isArray(data.tips) ? data.tips : [],
         };
+    }
+
+    function sameNameColorItems(items, defaults) {
+        if (!Array.isArray(items) || items.length !== defaults.length) return false;
+        const normalize = (arr) => arr
+            .map((item) => ({ name: item.name, color: item.color }))
+            .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+        return JSON.stringify(normalize(items)) === JSON.stringify(normalize(defaults));
+    }
+
+    function sameDefaultTips(tips) {
+        if (!Array.isArray(tips) || tips.length !== DEFAULT_TIPS.length) return false;
+        const normalize = (arr) => arr
+            .map((tip) => ({
+                id: tip.id,
+                title: tip.title,
+                number: tip.number,
+                tags: Array.isArray(tip.tags) ? tip.tags : [],
+                text: tip.text,
+                timestamp: tip.timestamp,
+            }))
+            .sort((a, b) => Number(a.number || 0) - Number(b.number || 0));
+        return JSON.stringify(normalize(tips)) === JSON.stringify(normalize(DEFAULT_TIPS));
+    }
+
+    function isDefaultDeliveryData(data) {
+        const normalized = parseRemoteData(data);
+        return Boolean(
+            normalized
+            && normalized.entries.length === 0
+            && sameNameColorItems(normalized.projects, DEFAULT_PROJECTS)
+            && sameNameColorItems(normalized.categories, DEFAULT_CATEGORIES)
+            && sameDefaultTips(normalized.tips)
+        );
     }
 
     function splitRemoteData(data) {
@@ -892,6 +953,12 @@
                 return;
             }
 
+            if (isDefaultDeliveryData(local)) {
+                applyRemoteData(remote.data, remote.etag);
+                setSyncStatus('synced', 'OneDrive-Daten geladen', 'Vorhandene OneDrive-Daten wurden übernommen.');
+                return;
+            }
+
             if (remoteIsNewer(remote.data.updatedAt, local.updatedAt) || state.sync.conflictData) {
                 applyRemoteData(remote.data, remote.etag);
                 setSyncStatus('synced', 'OneDrive-Daten geladen', 'Neuere OneDrive-Daten wurden übernommen.');
@@ -939,7 +1006,7 @@
                 return;
             }
 
-            if (forceRemote || sameTrackerData(remote.data, local) || !hasTrackerData(local) || remoteIsNewer(remote.data.updatedAt, local.updatedAt)) {
+            if (forceRemote || sameTrackerData(remote.data, local) || !hasTrackerData(local) || isDefaultDeliveryData(local) || remoteIsNewer(remote.data.updatedAt, local.updatedAt)) {
                 applyRemoteData(remote.data, remote.etag);
                 setSyncStatus('synced', 'Mit OneDrive synchronisiert', 'Deine Time-Tracker-Daten wurden aus OneDrive geladen.');
                 return;
