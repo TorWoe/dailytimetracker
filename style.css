@@ -676,6 +676,73 @@ input::placeholder {
     margin-bottom: 12px;
 }
 
+.tips-intro {
+    margin: 0 0 16px;
+    padding: 18px 20px;
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+    color: var(--text);
+    line-height: 1.65;
+}
+
+.tips-intro p {
+    margin: 0 0 10px;
+}
+
+.tips-intro p:last-child,
+.tips-intro li:last-child {
+    margin-bottom: 0;
+}
+
+.tips-intro ul {
+    margin: 8px 0 0 20px;
+    padding-left: 16px;
+}
+
+.tips-intro li {
+    margin-bottom: 6px;
+}
+
+.tips-toc-list {
+    list-style: none;
+    margin: 0 0 18px;
+    padding: 14px 18px;
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+}
+
+.tips-toc-list li {
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.tips-toc-list li:last-child {
+    border-bottom: 0;
+}
+
+.tip-toc-link {
+    display: block;
+    color: var(--primary);
+    font-weight: 700;
+    line-height: 1.45;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+.tip-toc-link:hover,
+.tip-toc-link:focus-visible {
+    color: #245fda;
+}
+
+.tip-toc-number {
+    color: var(--text);
+    font-weight: 800;
+}
+
 .tips-list {
     display: flex;
     flex-direction: column;
@@ -685,6 +752,7 @@ input::placeholder {
 .tip-card {
     position: relative;
     padding-right: 72px;
+    scroll-margin-top: 24px;
 }
 
 .tip-card .tip-text {
@@ -2488,6 +2556,20 @@ body.vday-resizing {
         overscroll-behavior: contain;
     }
 
+    .tips-intro,
+    .tips-toc-list {
+        padding: 16px;
+        border-radius: 20px;
+    }
+
+    .tips-intro {
+        line-height: 1.6;
+    }
+
+    .tips-toc-list {
+        margin-bottom: 16px;
+    }
+
     .tip-card {
         padding-right: 70px;
     }
@@ -2530,6 +2612,8 @@ body.vday-resizing {
     .manual-entry,
     .vday-board,
     .vday-repository,
+    .tips-intro,
+    .tips-toc-list,
     .tip-form,
     .settings-section {
         padding-left: 14px;
