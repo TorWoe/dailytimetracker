@@ -2295,6 +2295,23 @@
         });
     }
 
+    function renderTipsToc(tips) {
+        const toc = $('#tips-toc');
+        if (!toc) return;
+
+        if (tips.length === 0) {
+            toc.innerHTML = '';
+            return;
+        }
+
+        toc.innerHTML = `<ul class="tips-toc-list">${tips.map((tip) => {
+            const numPrefix = (tip.number !== null && tip.number !== undefined && tip.number !== '')
+                ? `<span class="tip-toc-number">${escHtml(String(tip.number))}.</span> `
+                : '';
+            return `<li><a href="#tip-${tip.id}" class="tip-toc-link">${numPrefix}${escHtml(tip.title)}</a></li>`;
+        }).join('')}</ul>`;
+    }
+
     function renderTipCard(t) {
         const tagsHtml = (t.tags || []).map((tag) => `<span class="tag">${escHtml(tag)}</span>`).join('');
         const numBadge = (t.number !== null && t.number !== undefined && t.number !== '') ? `<span class="tip-number">${escHtml(String(t.number))}</span>` : '';
@@ -2315,10 +2332,12 @@
     function renderTips() {
         const list = $('#tips-list');
         if (state.tips.length === 0) {
+            renderTipsToc([]);
             list.innerHTML = '<div class="no-entries">Keine Tipps vorhanden.</div>';
             return;
         }
         const sorted = sortTips(state.tips);
+        renderTipsToc(sorted);
         list.innerHTML = sorted.map((t) => renderTipCard(t)).join('');
     }
 
