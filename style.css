@@ -690,6 +690,10 @@ input::placeholder {
     white-space: normal;
 }
 
+.tip-card .entry-task {
+    font-weight: 800;
+}
+
 .tip-number {
     display: inline-block;
     background: var(--primary);
