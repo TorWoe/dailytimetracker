@@ -146,18 +146,21 @@
         return `${m} min`;
     }
 
-    function renderSummaryCards(targetSel, entries) {
+    function renderSummaryCards(targetSel, entries, options = {}) {
         const el = $(targetSel);
         if (!el) return;
 
         const totalSeconds = entries.reduce((sum, entry) => sum + entry.duration, 0);
         const uniqueDays = new Set(entries.map((entry) => entry.date)).size;
+        const averageCard = options.showAverage === false
+            ? ''
+            : `<div class="summary-card"><div class="label">Ø pro Tag</div><div class="value">${uniqueDays ? fmtDecimal(totalSeconds / uniqueDays) : '0.0h'}</div></div>`;
 
         el.innerHTML = `
             <div class="summary-card"><div class="label">Gesamtzeit</div><div class="value">${fmt(totalSeconds)}</div></div>
             <div class="summary-card"><div class="label">Einträge</div><div class="value">${entries.length}</div></div>
             <div class="summary-card"><div class="label">Aktive Tage</div><div class="value">${uniqueDays}</div></div>
-            <div class="summary-card"><div class="label">Ø pro Tag</div><div class="value">${uniqueDays ? fmtDecimal(totalSeconds / uniqueDays) : '0.0h'}</div></div>
+            ${averageCard}
         `;
     }
 
@@ -1402,7 +1405,7 @@
 
         if (filtered.length === 0) {
             list.innerHTML = '<div class="no-entries">Keine Einträge gefunden.</div>';
-            renderSummaryCards('#entries-summary', []);
+            renderSummaryCards('#entries-summary', [], { showAverage: false });
             renderEntriesCharts([]);
             return;
         }
@@ -1436,7 +1439,7 @@
             })
             .join('');
 
-        renderSummaryCards('#entries-summary', filtered);
+        renderSummaryCards('#entries-summary', filtered, { showAverage: false });
         renderEntriesCharts(filtered);
     }
 
