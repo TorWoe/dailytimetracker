@@ -1,0 +1,109 @@
+# Datenschutzerklärung
+
+## 1. Verantwortlicher
+Verantwortlich für diese Web-App ist:
+Torsten Schiffner
+Rossittener Strasse 11 B
+60487 Frankfurt am Main
+Deutschland
+E-Mail: t.schiffner26@gmx.de
+
+## 2. Allgemeine Hinweise
+Diese Web-App wurde privat entwickelt und wird kostenlos zur Verfügung gestellt. Die App ist öffentlich im Internet aufrufbar.
+Die Web-App verarbeitet nutzerindividuelle Daten grundsätzlich nicht auf einem eigenen Server des Anbieters. Nutzerindividuelle Daten werden nach der technischen Ausgestaltung der App lokal auf dem Gerät beziehungsweise im Browser des Nutzers gespeichert. Wenn der Nutzer die Synchronisation über Microsoft OneDrive aktiviert, werden die nutzerindividuellen Daten zusätzlich im OneDrive-Konto des jeweiligen Nutzers gespeichert.
+Der Anbieter betreibt keine eigene zentrale Nutzerdatenbank für die in der App eingegebenen Inhalte.
+
+## 3. Hosting der Web-App über GitHub Pages
+Diese Web-App wird über GitHub Pages bereitgestellt.
+Anbieter des Hosting-Dienstes ist:
+GitHub, Inc.
+88 Colin P. Kelly Jr. Street
+San Francisco, CA 94107
+USA
+Beim Aufruf der Web-App werden technisch notwendige Daten an GitHub übermittelt. Hierzu können insbesondere gehören:
+* IP-Adresse
+* Datum und Uhrzeit des Seitenaufrufs
+* aufgerufene Dateien oder Seiten
+* Browsertyp und Browserversion
+* verwendetes Betriebssystem
+* Referrer-URL, sofern übermittelt
+Diese Daten sind technisch erforderlich, um die Web-App über das Internet bereitzustellen, die Stabilität und Sicherheit des Angebots zu gewährleisten und die Seiten korrekt auszuliefern.
+Rechtsgrundlage für diese Verarbeitung ist Art. 6 Abs. 1 lit. f DSGVO. Das berechtigte Interesse liegt in der sicheren, stabilen und technisch funktionsfähigen Bereitstellung der Web-App.
+Weitere Informationen zur Datenverarbeitung durch GitHub finden sich in der Datenschutzerklärung von GitHub.
+
+## 4. Nutzung der Web-App ohne Registrierung beim Anbieter
+Die Web-App kann ohne Registrierung beim Anbieter genutzt werden.
+Der Anbieter selbst erstellt keine Nutzerkonten für diese Web-App. Es erfolgt keine Anmeldung beim Anbieter und keine zentrale Speicherung der vom Nutzer eingegebenen Daten beim Anbieter.
+Je nach Nutzung der Web-App können Nutzer eigene Inhalte und Daten eingeben, bearbeiten und speichern. Dazu können insbesondere gehören:
+* Einträge, Notizen, Zeiten, Projekte, Kategorien oder vergleichbare Nutzungsdaten
+* Einstellungen innerhalb der Web-App
+* Synchronisations- und Konfigurationsdaten
+* technische Daten, die für die lokale Speicherung und Nutzung erforderlich sind
+Welche Daten konkret gespeichert werden, hängt davon ab, welche Funktionen der Nutzer innerhalb der Web-App verwendet.
+
+## 5. Lokale Speicherung im Browser und auf dem Gerät
+Die Web-App speichert nutzerindividuelle Daten lokal im Browser beziehungsweise auf dem Gerät des Nutzers. Hierfür können je nach technischer Umsetzung insbesondere folgende Speichertechniken genutzt werden:
+* Local Storage
+* Session Storage
+* IndexedDB
+* Browser-Cache
+* sonstige lokale Browser- oder Gerätespeicher
+Die lokale Speicherung dient dazu, die Funktionen der Web-App bereitzustellen, Daten wiederzufinden, Einstellungen zu erhalten und die Nutzung der App auf dem jeweiligen Gerät beziehungsweise im jeweiligen Browser zu ermöglichen.
+Die lokal gespeicherten Daten verbleiben grundsätzlich auf dem Gerät beziehungsweise im Browser des Nutzers. Der Anbieter hat auf diese lokal gespeicherten Daten grundsätzlich keinen Zugriff, solange der Nutzer diese Daten nicht selbst aktiv an den Anbieter übermittelt, zum Beispiel im Rahmen einer Support-Anfrage.
+Die Speicherung ist für die Nutzung der App-Funktionen erforderlich. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO. Das berechtigte Interesse liegt in der funktionsfähigen Bereitstellung der Web-App. Soweit Informationen im Endgerät des Nutzers gespeichert oder ausgelesen werden, erfolgt dies, soweit technisch erforderlich, auf Grundlage von § 25 Abs. 2 TDDDG.
+Der Nutzer kann lokal gespeicherte Daten jederzeit löschen, indem er die entsprechenden Funktionen der Web-App nutzt, die Browserdaten löscht oder die Website-Daten im jeweiligen Browser entfernt.
+
+## 6. Synchronisation über Microsoft OneDrive
+Die Web-App bietet die Möglichkeit, nutzerindividuelle Daten über Microsoft OneDrive zu synchronisieren. Diese Funktion ist optional.
+Wenn der Nutzer die OneDrive-Synchronisation aktiviert, erfolgt die Speicherung der nutzerindividuellen Daten im OneDrive-Konto des jeweiligen Nutzers. Die Daten liegen dann nicht auf einem eigenen Server des Anbieters, sondern im Microsoft-Konto beziehungsweise OneDrive-Speicher des Nutzers.
+Für die Verbindung mit OneDrive kann eine Anmeldung bei Microsoft erforderlich sein. Die Authentifizierung erfolgt über Microsoft. Der Anbieter erhält hierbei nicht das Microsoft-Passwort des Nutzers.
+Je nach technischer Umsetzung kann die Web-App Berechtigungen benötigen, um Daten in OneDrive zu lesen, zu speichern, zu ändern oder zu löschen. Der konkrete Umfang der Berechtigungen ergibt sich aus dem Microsoft-Anmeldedialog beziehungsweise aus den von Microsoft angezeigten Berechtigungen.
+Die OneDrive-Synchronisation dient dazu, die vom Nutzer eingegebenen Daten über mehrere Geräte und Browser hinweg verfügbar zu machen.
+Rechtsgrundlage für die Nutzung der OneDrive-Synchronisation ist die Einwilligung des Nutzers gemäß Art. 6 Abs. 1 lit. a DSGVO, soweit personenbezogene Daten betroffen sind. Die Einwilligung kann widerrufen werden, indem der Nutzer die Verbindung zu OneDrive trennt, die entsprechenden Berechtigungen im Microsoft-Konto entfernt oder die Synchronisation in der Web-App nicht weiter nutzt.
+Für die Datenverarbeitung durch Microsoft im Rahmen von OneDrive und des Microsoft-Kontos ist Microsoft verantwortlich. Weitere Informationen hierzu finden sich in der Datenschutzerklärung von Microsoft.
+
+## 7. Keine Weitergabe nutzerindividueller App-Daten durch den Anbieter
+Der Anbieter gibt nutzerindividuelle App-Daten nicht aktiv an Dritte weiter.
+Eine Übermittlung an Dritte erfolgt nur, soweit dies technisch durch die Nutzung externer Dienste erforderlich ist, insbesondere:
+* an GitHub zur Bereitstellung der Web-App
+* an Microsoft, wenn der Nutzer die OneDrive-Synchronisation aktiviert
+* an den jeweiligen Browser beziehungsweise das jeweilige Endgerät des Nutzers zur lokalen Speicherung
+Der Anbieter verkauft keine Nutzerdaten und nutzt die nutzerindividuellen App-Daten nicht für Werbung.
+
+## 8. Keine Analyse-Tools und kein Werbe-Tracking
+Diese Web-App verwendet nach derzeitiger Gestaltung keine eigenen Analyse-Tools, kein Werbe-Tracking und keine Tracking-Cookies des Anbieters.
+Sollten künftig Analyse-, Statistik-, Werbe- oder Tracking-Dienste eingebunden werden, wird diese Datenschutzerklärung entsprechend angepasst. Soweit hierfür eine Einwilligung erforderlich ist, wird diese vorab eingeholt.
+
+## 9. Cookies und vergleichbare Technologien
+Die Web-App verwendet nach derzeitiger Gestaltung keine Cookies zu Werbe- oder Trackingzwecken.
+Soweit lokale Speichertechniken wie Local Storage, Session Storage oder IndexedDB genutzt werden, dienen diese der technischen Bereitstellung und Nutzung der ausdrücklich gewünschten App-Funktionen, insbesondere der Speicherung und Synchronisation nutzerindividueller Daten.
+
+## 10. Speicherdauer
+Lokal gespeicherte Daten bleiben grundsätzlich so lange im Browser beziehungsweise auf dem Gerät des Nutzers gespeichert, bis der Nutzer sie löscht, die Daten innerhalb der Web-App entfernt oder die Website-Daten im Browser löscht.
+In OneDrive gespeicherte Daten bleiben grundsätzlich so lange im OneDrive-Konto des Nutzers gespeichert, bis der Nutzer sie dort löscht, die Synchronisation beendet oder die Daten innerhalb der Web-App entfernt.
+Der Anbieter selbst speichert die nutzerindividuellen App-Daten grundsätzlich nicht zentral und legt daher hierfür keine eigene Speicherdauer fest.
+Für technische Zugriffsdaten, die beim Hosting über GitHub entstehen können, gelten die Speicherfristen und Datenschutzregelungen von GitHub.
+
+## 11. Sicherheit
+Die Web-App wird über das Internet bereitgestellt. Bei der Nutzung internetbasierter Dienste können trotz technischer Schutzmaßnahmen Sicherheitsrisiken bestehen.
+Der Nutzer ist selbst dafür verantwortlich, sein Endgerät, seinen Browser und sein Microsoft-Konto angemessen zu schützen, insbesondere durch sichere Passwörter, aktuelle Software und geeignete Kontosicherheitsfunktionen wie Zwei-Faktor-Authentifizierung.
+
+## 12. Rechte der betroffenen Personen
+Soweit personenbezogene Daten betroffen sind, haben Nutzer nach Maßgabe der DSGVO insbesondere folgende Rechte:
+* Recht auf Auskunft gemäß Art. 15 DSGVO
+* Recht auf Berichtigung gemäß Art. 16 DSGVO
+* Recht auf Löschung gemäß Art. 17 DSGVO
+* Recht auf Einschränkung der Verarbeitung gemäß Art. 18 DSGVO
+* Recht auf Datenübertragbarkeit gemäß Art. 20 DSGVO
+* Recht auf Widerspruch gegen bestimmte Verarbeitungen gemäß Art. 21 DSGVO
+* Recht auf Widerruf einer erteilten Einwilligung gemäß Art. 7 Abs. 3 DSGVO
+Zur Ausübung dieser Rechte kann der Nutzer den Anbieter unter der oben genannten Kontaktadresse kontaktieren.
+Soweit Daten ausschließlich lokal im Browser oder im OneDrive-Konto des Nutzers gespeichert sind, kann der Anbieter diese Daten nicht selbst löschen oder ändern. In diesem Fall kann der Nutzer die Daten selbst im Browser, in der Web-App oder in seinem OneDrive-Konto löschen oder ändern.
+
+## 13. Beschwerderecht bei einer Aufsichtsbehörde
+Nutzer haben das Recht, sich bei einer Datenschutzaufsichtsbehörde zu beschweren, wenn sie der Ansicht sind, dass die Verarbeitung personenbezogener Daten gegen die DSGVO verstößt.
+Zuständig ist insbesondere die Datenschutzaufsichtsbehörde des Bundeslandes, in dem der Nutzer seinen Wohnsitz hat, oder die Datenschutzaufsichtsbehörde des Bundeslandes, in dem der Anbieter seinen Sitz beziehungsweise Wohnsitz hat.
+
+## 14. Änderungen dieser Datenschutzerklärung
+Diese Datenschutzerklärung kann angepasst werden, wenn sich die Web-App, die verwendeten Dienste oder die rechtlichen Anforderungen ändern.
+Stand: 01.07.2026
