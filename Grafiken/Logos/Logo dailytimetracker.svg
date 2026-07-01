@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Daily Time Tracker App Icon</title>
+  <desc id="desc">App icon combining a clock and checklist for task management and time management.</desc>
+  <defs>
+    <linearGradient id="arcBlue" x1="170" y1="130" x2="735" y2="520" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1677F2"/>
+      <stop offset="1" stop-color="#0F8FE8"/>
+    </linearGradient>
+    <linearGradient id="arcTeal" x1="630" y1="440" x2="785" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#16C6B7"/>
+      <stop offset="1" stop-color="#10AFA1"/>
+    </linearGradient>
+    <style>
+      .round{stroke-linecap:round;stroke-linejoin:round}.check{fill:none;stroke:#fff;stroke-width:28;stroke-linecap:round;stroke-linejoin:round}
+    </style>
+  </defs>
+
+  <!-- transparent background -->
+
+  <!-- optional white rounded icon tile -->
+  <rect x="92" y="92" width="840" height="840" rx="170" fill="#FFFFFF"/>
+
+  <!-- clock arcs -->
+  <path d="M 257 384 A 315 315 0 0 1 790 343" fill="none" stroke="url(#arcBlue)" stroke-width="58" class="round"/>
+  <path d="M 816 393 A 315 315 0 0 1 526 764" fill="none" stroke="url(#arcTeal)" stroke-width="58" class="round"/>
+
+  <!-- checklist -->
+  <g transform="translate(210 454)">
+    <circle cx="58" cy="0" r="50" fill="#1677F2"/>
+    <path d="M35 -3 L52 18 L86 -25" class="check"/>
+    <line x1="128" y1="0" x2="255" y2="0" stroke="#062A55" stroke-width="30" class="round"/>
+
+    <circle cx="58" cy="115" r="50" fill="#13B9AB"/>
+    <path d="M35 112 L52 133 L86 90" class="check"/>
+    <line x1="128" y1="115" x2="248" y2="115" stroke="#062A55" stroke-width="30" class="round"/>
+
+    <circle cx="58" cy="230" r="50" fill="#FF8A00"/>
+    <path d="M35 227 L52 248 L86 205" class="check"/>
+    <line x1="128" y1="230" x2="252" y2="230" stroke="#062A55" stroke-width="30" class="round"/>
+  </g>
+
+  <!-- clock tick marks -->
+  <line x1="545" y1="272" x2="545" y2="300" stroke="#062A55" stroke-width="24" class="round"/>
+  <line x1="743" y1="519" x2="771" y2="519" stroke="#062A55" stroke-width="24" class="round"/>
+  <line x1="545" y1="716" x2="545" y2="744" stroke="#062A55" stroke-width="24" class="round"/>
+
+  <!-- clock hands -->
+  <line x1="545" y1="519" x2="545" y2="390" stroke="#062A55" stroke-width="42" class="round"/>
+  <line x1="545" y1="519" x2="682" y2="399" stroke="#062A55" stroke-width="32" class="round"/>
+  <circle cx="545" cy="519" r="46" fill="#062A55"/>
+</svg>
