@@ -6,7 +6,7 @@ Torsten Schiffner
 Rossittener Strasse 11 B
 60487 Frankfurt am Main
 Deutschland
-E-Mail: t.schiffner26@gmx.de
+E-Mail: [t.schiffner26@gmx.de](mailto:t.schiffner26@gmx.de)
 
 ## 2. Allgemeine Hinweise
 Diese Web-App wurde privat entwickelt und wird kostenlos zur Verfügung gestellt. Die App ist öffentlich im Internet aufrufbar.
