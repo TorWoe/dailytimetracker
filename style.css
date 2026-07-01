@@ -1307,6 +1307,26 @@ header h1 {
     font-weight: 800;
 }
 
+.brand-title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.24em;
+}
+
+.brand-title span {
+    min-width: 0;
+}
+
+.brand-logo {
+    display: block;
+    width: 1em;
+    height: 1em;
+    flex: 0 0 1em;
+    border-radius: 0.24em;
+    object-fit: cover;
+}
+
 .header-sync {
     position: relative;
     z-index: 2;
