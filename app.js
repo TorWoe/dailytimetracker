@@ -1136,6 +1136,11 @@
         return minutes >= VDAY_DAY_MINUTES ? '23:59' : minutesToTime(minutes);
     }
 
+    function clearUrlHash() {
+        if (!window.history?.replaceState) return;
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+
     function entryEndMinutes(entry) {
         const start = timeToMinutes(entry.start);
         const durationMinutes = Math.max(VDAY_STEP_MINUTES, Math.round((entry.duration || 0) / 60));
@@ -2521,7 +2526,7 @@
             const numPrefix = (tip.number !== null && tip.number !== undefined && tip.number !== '')
                 ? `<span class="tip-toc-number">${escHtml(String(tip.number))}.</span> `
                 : '';
-            return `<li><a href="#tip-${tip.id}" class="tip-toc-link">${numPrefix}${escHtml(tip.title)}</a></li>`;
+            return `<li><a href="#tip-${tip.id}" class="tip-toc-link" data-tip-target="${escHtml(tip.id)}">${numPrefix}${escHtml(tip.title)}</a></li>`;
         }).join('')}</ul>`;
     }
 
@@ -3011,6 +3016,17 @@
         }
     });
 
+    $('#tips-toc')?.addEventListener('click', (event) => {
+        const link = event.target instanceof Element ? event.target.closest('.tip-toc-link') : null;
+        if (!link) return;
+        event.preventDefault();
+
+        const targetId = link.dataset.tipTarget;
+        const target = targetId ? document.getElementById(`tip-${targetId}`) : null;
+        target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        clearUrlHash();
+    });
+
     load();
     populateSelects();
     setupRichTextTextarea('#tip-text');
@@ -3019,29 +3035,31 @@
     $('#vday-date').value = todayStr();
     state.vdayDate = todayStr();
 
-    if (location.hash === '#vday') {
-        location.hash = '';
+    if (location.hash.startsWith('#tip-')) {
+        clearUrlHash();
+    } else if (location.hash === '#vday') {
+        clearUrlHash();
         $$('.nav-btn').forEach((b) => b.classList.remove('active'));
         $$('.view').forEach((v) => v.classList.remove('active'));
         $('[data-view="vday"]').classList.add('active');
         $('#vday').classList.add('active');
         renderVDay();
     } else if (location.hash === '#search') {
-        location.hash = '';
+        clearUrlHash();
         $$('.nav-btn').forEach((b) => b.classList.remove('active'));
         $$('.view').forEach((v) => v.classList.remove('active'));
         $('[data-view="search"]').classList.add('active');
         $('#search').classList.add('active');
         initSearchMultiSelects();
     } else if (location.hash === '#entries') {
-        location.hash = '';
+        clearUrlHash();
         $$('.nav-btn').forEach((b) => b.classList.remove('active'));
         $$('.view').forEach((v) => v.classList.remove('active'));
         $('[data-view="entries"]').classList.add('active');
         $('#entries').classList.add('active');
         renderEntries();
     } else if (location.hash === '#reports') {
-        location.hash = '';
+        clearUrlHash();
         $$('.nav-btn').forEach((b) => b.classList.remove('active'));
         $$('.view').forEach((v) => v.classList.remove('active'));
         $('[data-view="reports"]').classList.add('active');
