@@ -725,17 +725,24 @@ input::placeholder {
 }
 
 .tip-toc-link {
-    display: block;
+    display: inline;
+    padding: 0;
+    border: 0;
+    background: none;
     color: var(--primary);
+    font: inherit;
     font-weight: 700;
     line-height: 1.45;
+    text-align: left;
     text-decoration: none;
+    cursor: pointer;
     overflow-wrap: anywhere;
 }
 
 .tip-toc-link:hover,
 .tip-toc-link:focus-visible {
     color: #245fda;
+    outline: none;
 }
 
 .tip-toc-number {

@@ -1136,9 +1136,14 @@
         return minutes >= VDAY_DAY_MINUTES ? '23:59' : minutesToTime(minutes);
     }
 
-    function clearUrlHash() {
-        if (!window.history?.replaceState) return;
-        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    function clearAppUrlHash() {
+        if (!location.hash) return;
+        const cleanUrl = `${location.pathname}${location.search}`;
+        if (history.replaceState) {
+            history.replaceState(null, document.title, cleanUrl);
+        } else {
+            location.hash = '';
+        }
     }
 
     function entryEndMinutes(entry) {
@@ -1168,6 +1173,7 @@
     // ── Navigation ──
     $$('.nav-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
+            clearAppUrlHash();
             $$('.nav-btn').forEach((b) => b.classList.remove('active'));
             btn.classList.add('active');
             $$('.view').forEach((v) => v.classList.remove('active'));
@@ -1692,7 +1698,8 @@
     });
 
     $('#btn-entries-reset').addEventListener('click', () => {
-        window.location.href = window.location.pathname + '#entries';
+        sessionStorage.setItem('dtt_reload_view', 'entries');
+        clearAppUrlHash();
         window.location.reload();
     });
 
@@ -1797,7 +1804,8 @@
     });
 
     $('#btn-report-reset').addEventListener('click', () => {
-        window.location.href = window.location.pathname + '#reports';
+        sessionStorage.setItem('dtt_reload_view', 'reports');
+        clearAppUrlHash();
         window.location.reload();
     });
 
@@ -2387,7 +2395,9 @@
     }
 
     function resetTimerView() {
-        window.location.href = window.location.pathname;
+        sessionStorage.setItem('dtt_reload_view', 'tracker');
+        clearAppUrlHash();
+        window.location.reload();
     }
 
     $('#btn-timer-reset').addEventListener('click', resetTimerView);
@@ -2489,7 +2499,8 @@
     });
 
     $('#btn-search-reset').addEventListener('click', () => {
-        window.location.href = window.location.pathname + '#search';
+        sessionStorage.setItem('dtt_reload_view', 'search');
+        clearAppUrlHash();
         window.location.reload();
     });
 
@@ -2526,7 +2537,7 @@
             const numPrefix = (tip.number !== null && tip.number !== undefined && tip.number !== '')
                 ? `<span class="tip-toc-number">${escHtml(String(tip.number))}.</span> `
                 : '';
-            return `<li><a href="#tip-${tip.id}" class="tip-toc-link" data-tip-target="${escHtml(tip.id)}">${numPrefix}${escHtml(tip.title)}</a></li>`;
+            return `<li><button type="button" class="tip-toc-link" data-tip-target="${escHtml(tip.id)}">${numPrefix}${escHtml(tip.title)}</button></li>`;
         }).join('')}</ul>`;
     }
 
@@ -3024,7 +3035,7 @@
         const targetId = link.dataset.tipTarget;
         const target = targetId ? document.getElementById(`tip-${targetId}`) : null;
         target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        clearUrlHash();
+        clearAppUrlHash();
     });
 
     load();
@@ -3035,31 +3046,34 @@
     $('#vday-date').value = todayStr();
     state.vdayDate = todayStr();
 
+    const reloadView = sessionStorage.getItem('dtt_reload_view');
+    sessionStorage.removeItem('dtt_reload_view');
+
     if (location.hash.startsWith('#tip-')) {
-        clearUrlHash();
-    } else if (location.hash === '#vday') {
-        clearUrlHash();
+        clearAppUrlHash();
+    } else if (reloadView === 'vday' || location.hash === '#vday') {
+        clearAppUrlHash();
         $$('.nav-btn').forEach((b) => b.classList.remove('active'));
         $$('.view').forEach((v) => v.classList.remove('active'));
         $('[data-view="vday"]').classList.add('active');
         $('#vday').classList.add('active');
         renderVDay();
-    } else if (location.hash === '#search') {
-        clearUrlHash();
+    } else if (reloadView === 'search' || location.hash === '#search') {
+        clearAppUrlHash();
         $$('.nav-btn').forEach((b) => b.classList.remove('active'));
         $$('.view').forEach((v) => v.classList.remove('active'));
         $('[data-view="search"]').classList.add('active');
         $('#search').classList.add('active');
         initSearchMultiSelects();
-    } else if (location.hash === '#entries') {
-        clearUrlHash();
+    } else if (reloadView === 'entries' || location.hash === '#entries') {
+        clearAppUrlHash();
         $$('.nav-btn').forEach((b) => b.classList.remove('active'));
         $$('.view').forEach((v) => v.classList.remove('active'));
         $('[data-view="entries"]').classList.add('active');
         $('#entries').classList.add('active');
         renderEntries();
-    } else if (location.hash === '#reports') {
-        clearUrlHash();
+    } else if (reloadView === 'reports' || location.hash === '#reports') {
+        clearAppUrlHash();
         $$('.nav-btn').forEach((b) => b.classList.remove('active'));
         $$('.view').forEach((v) => v.classList.remove('active'));
         $('[data-view="reports"]').classList.add('active');
@@ -3070,6 +3084,8 @@
         $('[data-period="day"]').classList.add('active');
         updateReportNav();
         renderReports();
+    } else if (reloadView === 'tracker') {
+        clearAppUrlHash();
     }
     void initializeOneDrive();
 })();
