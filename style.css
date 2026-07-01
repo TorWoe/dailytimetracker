@@ -1339,6 +1339,32 @@ header h1 {
     max-width: min(42vw, 540px);
 }
 
+.app-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    padding: 26px 16px 2px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.app-footer a {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.18s ease;
+}
+
+.app-footer a:hover,
+.app-footer a:focus-visible {
+    color: var(--primary);
+    outline: none;
+}
+
 .onedrive-actions {
     display: inline-flex;
     align-items: center;
