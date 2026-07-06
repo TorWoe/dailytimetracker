@@ -7,14 +7,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=dtt-onedrive-sync-reload-20260706-1">
 </head>
 <body>
     <div class="app">
         <header>
             <div class="header-sync" aria-label="OneDrive Synchronisierung">
-                <div class="onedrive-actions">
-                    <button class="sync-button" id="syncButton" type="button" disabled>
+                <div class="sync-menu" id="syncMenu" data-open="false">
+                    <button class="sync-button" id="syncButton" type="button" disabled aria-expanded="false">
                         <span class="sync-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24" focusable="false">
                                 <path d="M17.5 18H8a5 5 0 1 1 1.2-9.85A6.5 6.5 0 0 1 21 12a3 3 0 0 1-3.5 6Z"></path>
@@ -23,8 +23,13 @@
                         </span>
                         <span id="syncButtonLabel">OneDrive Sync</span>
                         <span class="sync-dot" id="syncDot" aria-hidden="true"></span>
+                        <span class="sync-caret" aria-hidden="true">&#9662;</span>
                     </button>
-                    <button class="sync-auth-button" id="syncAuthButton" type="button">OneDrive Login</button>
+                    <div class="sync-menu-panel" role="menu" aria-label="OneDrive Optionen">
+                        <button id="syncMenuPrimary" type="button" role="menuitem">OneDrive anmelden</button>
+                        <button id="syncMenuRenew" type="button" role="menuitem" hidden>Anmeldung erneuern</button>
+                        <button id="syncMenuLogout" type="button" role="menuitem" hidden>OneDrive abmelden</button>
+                    </div>
                 </div>
                 <div class="sync-panel" id="syncPanel" data-sync-status="local">
                     <strong id="syncStatusTitle">Nicht angemeldet</strong>
@@ -451,7 +456,7 @@
 
     <script src="vendor/msal-browser.min.js?v=2.38.3"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="default-tips.js"></script>
-    <script src="app.js"></script>
+    <script src="default-tips.js?v=dtt-onedrive-sync-reload-20260706-1"></script>
+    <script src="app.js?v=dtt-onedrive-sync-reload-20260706-1"></script>
 </body>
 </html>

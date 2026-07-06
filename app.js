@@ -8,7 +8,15 @@
         tips: 'dtt_tips',
     };
     const STORAGE_META_KEY = 'dtt_sync_meta';
-    const PENDING_LOGIN_KEY = 'dtt_onedrive_login_pending';
+    const APP_VERSION = 'dtt-onedrive-sync-reload-20260706-1';
+    const APP_VERSION_FILE = 'app-version.json';
+    const APP_REFRESH_PARAM = 'appRefresh';
+    const APP_REFRESH_SESSION_KEY = 'dtt_app_refresh_version';
+    const LEGACY_PENDING_LOGIN_KEY = 'dtt_onedrive_login_pending';
+    const MANUAL_LOGOUT_KEY = 'dtt_onedrive_manual_logout';
+    const AUTH_RELOAD_PARAM = 'authReload';
+    const AUTH_LOGOUT_PARAM = 'onedriveLogout';
+    const REDIRECT_TOKEN_TTL_MS = 55 * 60 * 1000;
     const APP_DATA_FILE_NAMES = {
         legacy: 'dailytimetracker-data.json',
         entries: 'dailytimetracker-entries.json',
@@ -23,10 +31,12 @@
             clientId: '01d80b57-6a01-448d-ac58-d7a566a16673',
             authority: 'https://login.microsoftonline.com/common',
             redirectUri: window.location.origin + window.location.pathname,
+            navigateToLoginRequestUrl: false,
         },
         cache: {
             cacheLocation: 'localStorage',
-            storeAuthStateInCookie: false,
+            temporaryCacheLocation: 'localStorage',
+            storeAuthStateInCookie: true,
         },
     };
 
@@ -42,7 +52,10 @@
             account: null,
             initialized: false,
             busy: false,
-            resuming: false,
+            allowInteractiveTokenRedirect: false,
+            needsInteractiveToken: false,
+            redirectAccessToken: '',
+            redirectAccessTokenExpiresAt: 0,
             status: 'local',
             title: 'Nicht angemeldet',
             message: 'Deine Daten werden lokal auf diesem Gerät gespeichert.',
@@ -667,12 +680,15 @@
 
     function renderSyncStatus() {
         const syncButton = $('#syncButton');
-        const authButton = $('#syncAuthButton');
+        const syncMenu = $('#syncMenu');
+        const syncMenuPrimary = $('#syncMenuPrimary');
+        const syncMenuRenew = $('#syncMenuRenew');
+        const syncMenuLogout = $('#syncMenuLogout');
         const syncPanel = $('#syncPanel');
         const syncTitle = $('#syncStatusTitle');
         const syncText = $('#syncStatusText');
         const syncButtonLabel = $('#syncButtonLabel');
-        if (!syncButton || !authButton || !syncPanel || !syncTitle || !syncText || !syncButtonLabel) return;
+        if (!syncButton || !syncPanel || !syncTitle || !syncText || !syncButtonLabel) return;
 
         syncButton.dataset.syncStatus = state.sync.status;
         syncPanel.dataset.syncStatus = state.sync.status;
@@ -681,10 +697,39 @@
         syncText.hidden = compactStatus;
         syncText.textContent = compactStatus ? '' : state.sync.message;
         syncPanel.dataset.hasMessage = compactStatus ? 'false' : 'true';
-        syncButton.disabled = state.sync.busy || !state.sync.account;
-        authButton.disabled = state.sync.busy;
-        syncButtonLabel.textContent = state.sync.busy ? 'OneDrive ...' : 'OneDrive Sync';
-        authButton.textContent = state.sync.account ? 'OneDrive Logout' : 'OneDrive Login';
+        const authBusy = isOneDriveAuthInProgress();
+        if (authBusy) setSyncMenuOpen(true);
+        syncButton.disabled = false;
+        syncButton.dataset.busy = state.sync.busy ? 'true' : 'false';
+        syncButton.setAttribute('aria-expanded', syncMenu?.dataset.open === 'true' ? 'true' : 'false');
+        syncButtonLabel.textContent = getSyncMenuText();
+
+        if (syncMenuPrimary) {
+            syncMenuPrimary.disabled = state.sync.busy;
+            syncMenuPrimary.textContent = state.sync.account
+                ? (state.sync.conflictData ? 'OneDrive-Daten laden' : 'Jetzt synchronisieren')
+                : 'OneDrive anmelden';
+        }
+        if (syncMenuRenew) {
+            syncMenuRenew.hidden = !(state.sync.account || authBusy || state.sync.needsInteractiveToken);
+            syncMenuRenew.disabled = !state.sync.msal;
+        }
+        if (syncMenuLogout) {
+            syncMenuLogout.hidden = !(state.sync.account || authBusy);
+            syncMenuLogout.disabled = false;
+        }
+    }
+
+    function getSyncMenuText() {
+        if (state.sync.busy) return 'OneDrive ...';
+        if (state.sync.account && state.sync.status === 'synced') return 'OneDrive aktiv';
+        if (state.sync.account && state.sync.status === 'conflict') return 'OneDrive Konflikt';
+        if (state.sync.account) return 'OneDrive Sync';
+        return 'OneDrive Login';
+    }
+
+    function isOneDriveAuthInProgress() {
+        return state.sync.status === 'loading' && state.sync.title.includes('Microsoft-Anmeldung');
     }
 
     function explainAuthError(error) {
@@ -696,60 +741,205 @@
         return 'Microsoft-Anmeldung fehlgeschlagen. Deine Daten bleiben lokal gespeichert.';
     }
 
-    function markLoginPending() {
-        localStorage.setItem(PENDING_LOGIN_KEY, String(Date.now()));
+    function setManualLogout(active) {
+        if (active) {
+            localStorage.setItem(MANUAL_LOGOUT_KEY, '1');
+        } else {
+            localStorage.removeItem(MANUAL_LOGOUT_KEY);
+        }
+        localStorage.removeItem(LEGACY_PENDING_LOGIN_KEY);
     }
 
-    function clearLoginPending() {
-        localStorage.removeItem(PENDING_LOGIN_KEY);
+    function isManualLogoutActive() {
+        return localStorage.getItem(MANUAL_LOGOUT_KEY) === '1';
     }
 
-    function hasRecentPendingLogin() {
-        const startedAt = Number(localStorage.getItem(PENDING_LOGIN_KEY) || 0);
-        return startedAt > 0 && Date.now() - startedAt < 10 * 60 * 1000;
-    }
-
-    async function resumeOneDriveSession() {
-        if (!state.sync.msal || state.sync.resuming) return;
-        if (state.sync.account && state.sync.status !== 'loading') return;
-        if (!hasRecentPendingLogin() && state.sync.status !== 'loading') return;
-
-        state.sync.resuming = true;
-        state.sync.busy = false;
-        try {
-            const redirectResponse = await state.sync.msal.handleRedirectPromise().catch(() => null);
-            const accounts = state.sync.msal.getAllAccounts();
-            state.sync.account = redirectResponse?.account || accounts[0] || null;
-            if (state.sync.account) {
-                clearLoginPending();
-                state.sync.msal.setActiveAccount(state.sync.account);
-                await syncFromOneDrive();
-            } else if (hasRecentPendingLogin()) {
-                setSyncStatus('loading', 'Microsoft-Anmeldung', 'Die Anmeldung wird geprüft. Falls Microsoft noch offen ist, schließe den Tab nach der Zustimmung.');
+    function clearStaleMsalInteractionStatus() {
+        [localStorage, sessionStorage].forEach((storage) => {
+            for (let index = storage.length - 1; index >= 0; index -= 1) {
+                const key = storage.key(index) || '';
+                const isMsalInteractionKey = key.includes('interaction.status')
+                    && (key.includes(MSAL_CONFIG.auth.clientId) || key.startsWith('msal.'));
+                if (isMsalInteractionKey) storage.removeItem(key);
             }
-        } finally {
-            state.sync.busy = false;
-            state.sync.resuming = false;
-            renderSyncStatus();
+        });
+    }
+
+    function clearOneDriveMsalCache() {
+        const clientId = MSAL_CONFIG.auth.clientId.toLowerCase();
+        const looksLikeMsalValue = (value) => {
+            if (!value || value[0] !== '{') return false;
+            try {
+                const parsed = JSON.parse(value);
+                return Boolean(
+                    parsed.clientId === MSAL_CONFIG.auth.clientId
+                    || parsed.homeAccountId
+                    || parsed.localAccountId
+                    || parsed.credentialType
+                    || parsed.authorityType
+                    || parsed.environment === 'login.windows.net'
+                    || parsed.environment === 'login.microsoftonline.com'
+                );
+            } catch {
+                return false;
+            }
+        };
+        [localStorage, sessionStorage].forEach((storage) => {
+            for (let index = storage.length - 1; index >= 0; index -= 1) {
+                const key = storage.key(index) || '';
+                const normalizedKey = key.toLowerCase();
+                const value = storage.getItem(key) || '';
+                const isMsalKey = normalizedKey.startsWith('msal.')
+                    || normalizedKey.includes(clientId)
+                    || normalizedKey.includes('login.microsoftonline.com')
+                    || normalizedKey.includes('login.windows.net');
+                if (isMsalKey || looksLikeMsalValue(value)) storage.removeItem(key);
+            }
+        });
+    }
+
+    function clearOneDriveMsalCookies() {
+        const clientId = MSAL_CONFIG.auth.clientId.toLowerCase();
+        document.cookie.split(';').forEach((cookie) => {
+            const name = cookie.split('=')[0]?.trim();
+            if (!name) return;
+            const normalizedName = name.toLowerCase();
+            if (!normalizedName.startsWith('msal.') && !normalizedName.includes(clientId)) return;
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+            document.cookie = `${name}=; max-age=0; path=/; SameSite=Lax`;
+        });
+    }
+
+    function isInteractionInProgressError(error) {
+        const text = `${error?.errorCode || ''} ${error?.message || ''}`.toLowerCase();
+        return text.includes('interaction_in_progress');
+    }
+
+    async function redirectWithFreshInteraction(startRedirect) {
+        try {
+            await startRedirect();
+        } catch (error) {
+            if (!isInteractionInProgressError(error)) throw error;
+            clearStaleMsalInteractionStatus();
+            await startRedirect();
         }
     }
 
-    function scheduleOneDriveResumeChecks() {
-        [2500, 7000, 14000].forEach((delay) => {
-            setTimeout(() => { void resumeOneDriveSession(); }, delay);
-        });
+    function hasOneDriveRedirectResponse() {
+        const queryParams = new URLSearchParams(window.location.search);
+        const hashText = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
+        const hashParams = new URLSearchParams(hashText);
+        return ['code', 'error', 'state', 'client_info'].some((key) => queryParams.has(key) || hashParams.has(key));
+    }
+
+    function clearOneDriveRedirectResponseUrl() {
+        if (!hasOneDriveRedirectResponse()) return;
+        const url = new URL(window.location.href);
+        ['code', 'error', 'error_description', 'state', 'client_info', 'session_state'].forEach((key) => url.searchParams.delete(key));
+        const hashText = url.hash.startsWith('#') ? url.hash.slice(1) : url.hash;
+        const hashParams = new URLSearchParams(hashText);
+        const hasAuthHash = ['code', 'error', 'state', 'client_info'].some((key) => hashParams.has(key));
+        if (hasAuthHash) url.hash = '';
+        history.replaceState(null, document.title, `${url.pathname}${url.search}${url.hash}`);
+    }
+
+    function clearAuthReloadState() {
+        sessionStorage.removeItem('dtt_onedrive_auth_reload');
+    }
+
+    function clearAuthReloadParam() {
+        const url = new URL(window.location.href);
+        const hasAuthParam = url.searchParams.has(AUTH_RELOAD_PARAM)
+            || url.searchParams.has(AUTH_LOGOUT_PARAM)
+            || url.searchParams.has(APP_REFRESH_PARAM);
+        if (!hasAuthParam) return;
+        url.searchParams.delete(AUTH_RELOAD_PARAM);
+        url.searchParams.delete(AUTH_LOGOUT_PARAM);
+        url.searchParams.delete(APP_REFRESH_PARAM);
+        history.replaceState(null, document.title, `${url.pathname}${url.search}${url.hash}`);
+    }
+
+    function forceOneDriveLogoutReload() {
+        const refreshUrl = new URL(window.location.href);
+        refreshUrl.hash = '';
+        refreshUrl.searchParams.delete(AUTH_RELOAD_PARAM);
+        refreshUrl.searchParams.set(AUTH_LOGOUT_PARAM, String(Date.now()));
+        window.location.replace(refreshUrl.toString());
+        setTimeout(() => {
+            if (window.location.href !== refreshUrl.toString()) window.location.href = refreshUrl.toString();
+        }, 250);
+    }
+
+    function rememberRedirectToken(response) {
+        if (!response?.accessToken) return;
+        state.sync.redirectAccessToken = response.accessToken;
+        const expiresAt = response.expiresOn instanceof Date ? response.expiresOn.getTime() : 0;
+        state.sync.redirectAccessTokenExpiresAt = expiresAt || Date.now() + REDIRECT_TOKEN_TTL_MS;
+    }
+
+    function consumeRedirectToken() {
+        if (!state.sync.redirectAccessToken) return '';
+        if (state.sync.redirectAccessTokenExpiresAt && Date.now() >= state.sync.redirectAccessTokenExpiresAt - 60 * 1000) {
+            state.sync.redirectAccessToken = '';
+            state.sync.redirectAccessTokenExpiresAt = 0;
+            return '';
+        }
+        return state.sync.redirectAccessToken;
+    }
+
+    function closeSyncMenu() {
+        setSyncMenuOpen(false);
+    }
+
+    function setSyncMenuOpen(open) {
+        const syncMenu = $('#syncMenu');
+        const syncButton = $('#syncButton');
+        if (!syncMenu) return;
+        syncMenu.dataset.open = open ? 'true' : 'false';
+        syncButton?.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    function toggleSyncMenu() {
+        const syncMenu = $('#syncMenu');
+        const syncButton = $('#syncButton');
+        if (!syncMenu || syncButton?.disabled) return;
+        const open = syncMenu.dataset.open === 'true';
+        setSyncMenuOpen(!open);
+    }
+
+    function runOneDrivePrimaryAction() {
+        if (state.sync.conflictData) {
+            closeSyncMenu();
+            void syncFromOneDrive({ forceRemote: true });
+            return;
+        }
+        if (state.sync.account) {
+            closeSyncMenu();
+            void manualSyncOneDrive();
+        } else {
+            setSyncMenuOpen(true);
+            void loginToOneDrive();
+        }
     }
 
     async function getGraphToken() {
         if (!state.sync.account) throw new Error('not-signed-in');
+        const redirectToken = consumeRedirectToken();
+        if (redirectToken) return redirectToken;
         const request = { ...LOGIN_REQUEST, account: state.sync.account };
         try {
             const response = await state.sync.msal.acquireTokenSilent(request);
             return response.accessToken;
-        } catch {
-            setSyncStatus('loading', 'Microsoft-Anmeldung', 'Du wirst zu Microsoft weitergeleitet.');
-            await state.sync.msal.acquireTokenRedirect({ ...request, redirectStartPage: window.location.href });
-            throw new Error('redirect-started');
+        } catch (error) {
+            state.sync.needsInteractiveToken = true;
+            if (state.sync.allowInteractiveTokenRedirect) {
+                state.sync.allowInteractiveTokenRedirect = false;
+                setSyncStatus('loading', 'Microsoft-Anmeldung', 'Du wirst zu Microsoft weitergeleitet.');
+                clearStaleMsalInteractionStatus();
+                await redirectWithFreshInteraction(() => state.sync.msal.acquireTokenRedirect({ ...request, redirectStartPage: window.location.href }));
+                throw new Error('redirect-started');
+            }
+            throw error;
         }
     }
 
@@ -879,6 +1069,12 @@
             setSyncStatus('local', 'Nicht angemeldet', 'Deine Daten werden lokal auf diesem Gerät gespeichert.');
             return;
         }
+        const authText = `${error?.errorCode || ''} ${error?.message || ''}`.toLowerCase();
+        if (authText.includes('interaction_required') || authText.includes('login_required') || authText.includes('consent_required')) {
+            state.sync.needsInteractiveToken = true;
+            setSyncStatus('error', 'Anmeldung erneuern', 'Bitte oeffne das OneDrive-Menue und erneuere die Anmeldung.');
+            return;
+        }
         const message = error?.status === 401 || error?.status === 403
             ? 'Zugriff auf OneDrive wurde nicht erlaubt. Bitte erneut anmelden.'
             : 'OneDrive konnte nicht erreicht werden. Lokale Daten bleiben erhalten.';
@@ -923,6 +1119,10 @@
             setSyncStatus('local', 'Nicht angemeldet', 'Deine Daten werden lokal auf diesem Gerät gespeichert.');
             return;
         }
+        if (state.sync.needsInteractiveToken) {
+            setSyncStatus('error', 'Anmeldung erneuern', 'Bitte oeffne das OneDrive-Menue und erneuere die Anmeldung.');
+            return;
+        }
         clearTimeout(oneDriveSaveTimer);
         setSyncStatus('saving', 'Speichern vorbereitet', 'Die Änderung wird gleich mit OneDrive synchronisiert.');
         oneDriveSaveTimer = setTimeout(() => { void saveDataToOneDrive(); }, 650);
@@ -931,6 +1131,7 @@
     async function manualSyncOneDrive() {
         if (!state.sync.account || state.sync.busy) return;
         state.sync.busy = true;
+        state.sync.allowInteractiveTokenRedirect = true;
         setSyncStatus('loading', 'Prüfe OneDrive', 'Deine Time-Tracker-Daten werden abgeglichen.');
         try {
             const remote = state.sync.conflictData || await loadRemoteData();
@@ -984,6 +1185,7 @@
             handleOneDriveError(error, 'Synchronisieren fehlgeschlagen');
         } finally {
             state.sync.busy = false;
+            state.sync.allowInteractiveTokenRedirect = false;
             renderSyncStatus();
         }
     }
@@ -1030,12 +1232,13 @@
 
     async function loginToOneDrive() {
         if (!state.sync.msal || state.sync.busy) return;
+        setSyncMenuOpen(true);
         state.sync.busy = true;
-        markLoginPending();
-        scheduleOneDriveResumeChecks();
+        setManualLogout(false);
+        clearStaleMsalInteractionStatus();
         setSyncStatus('loading', 'Microsoft-Anmeldung', 'Du wirst zu Microsoft weitergeleitet.');
         try {
-            await state.sync.msal.loginRedirect({ ...LOGIN_REQUEST, redirectStartPage: window.location.href });
+            await redirectWithFreshInteraction(() => state.sync.msal.loginRedirect({ ...LOGIN_REQUEST, redirectStartPage: window.location.href }));
         } catch (error) {
             setSyncStatus('error', 'Anmeldung fehlgeschlagen', explainAuthError(error));
         } finally {
@@ -1044,32 +1247,80 @@
         }
     }
 
-    async function logoutFromOneDrive() {
-        if (!state.sync.msal || state.sync.busy) return;
+    function logoutFromOneDrive(event) {
+        event?.preventDefault();
+        event?.stopPropagation();
+        clearTimeout(oneDriveSaveTimer);
+        setManualLogout(true);
+        if (!state.sync.msal) {
+            forceOneDriveLogoutReload();
+            return;
+        }
+        if (state.sync.busy) state.sync.busy = false;
         state.sync.busy = true;
-        clearLoginPending();
-        setSyncStatus('loading', 'Microsoft-Abmeldung', 'Du wirst von OneDrive abgemeldet.');
+        setSyncStatus('loading', 'Microsoft-Abmeldung', 'Die Verbindung zu OneDrive wird lokal getrennt.');
         try {
-            const account = state.sync.account || state.sync.msal.getActiveAccount?.();
+            const account = state.sync.account
+                || state.sync.msal.getActiveAccount?.()
+                || state.sync.msal.getAllAccounts?.()?.[0];
+            clearAuthReloadState();
+            clearStaleMsalInteractionStatus();
+            clearOneDriveMsalCache();
+            clearOneDriveMsalCookies();
             state.sync.account = null;
+            state.sync.needsInteractiveToken = false;
+            state.sync.redirectAccessToken = '';
+            state.sync.redirectAccessTokenExpiresAt = 0;
+            state.sync.allowInteractiveTokenRedirect = false;
             state.sync.lastRemoteUpdatedAt = '';
             state.sync.lastRemoteEtag = '';
             state.sync.hasRemoteData = false;
             state.sync.conflictData = null;
-            if (account) {
-                await state.sync.msal.logoutRedirect({
-                    account,
-                    postLogoutRedirectUri: MSAL_CONFIG.auth.redirectUri,
-                });
-            } else {
-                setSyncStatus('local', 'Nicht angemeldet', 'Deine Daten werden lokal auf diesem Gerät gespeichert.');
+            state.sync.msal.setActiveAccount?.(null);
+            if (state.sync.msal.clearCache) {
+                Promise.resolve(state.sync.msal.clearCache(account ? { account } : {})).catch(() => {});
             }
-        } catch {
-            setSyncStatus('error', 'Abmeldung fehlgeschlagen', 'Microsoft-Abmeldung konnte nicht abgeschlossen werden.');
-        } finally {
             state.sync.busy = false;
-            renderSyncStatus();
+            setSyncStatus('local', 'Nicht angemeldet', 'Deine Daten werden lokal auf diesem Geraet gespeichert.');
+            forceOneDriveLogoutReload();
+        } catch {
+            clearAuthReloadState();
+            clearStaleMsalInteractionStatus();
+            clearOneDriveMsalCache();
+            clearOneDriveMsalCookies();
+            state.sync.account = null;
+            state.sync.busy = false;
+            setSyncStatus('local', 'Nicht angemeldet', 'Deine Daten werden lokal auf diesem Geraet gespeichert.');
+            forceOneDriveLogoutReload();
         }
+    }
+
+    function renewOneDriveLogin(event) {
+        event?.preventDefault();
+        event?.stopPropagation();
+        location.reload();
+    }
+
+    async function fetchLatestAppVersion() {
+        try {
+            const response = await fetch(`${APP_VERSION_FILE}?v=${encodeURIComponent(Date.now())}`, { cache: 'no-store' });
+            if (!response.ok) return '';
+            const data = await response.json();
+            return typeof data.appVersion === 'string' ? data.appVersion : '';
+        } catch {
+            return '';
+        }
+    }
+
+    async function ensureLatestAppVersion() {
+        if (hasOneDriveRedirectResponse()) return;
+        const latestVersion = await fetchLatestAppVersion();
+        if (!latestVersion || latestVersion === APP_VERSION) return;
+        if (sessionStorage.getItem(APP_REFRESH_SESSION_KEY) === latestVersion) return;
+        sessionStorage.setItem(APP_REFRESH_SESSION_KEY, latestVersion);
+        const url = new URL(window.location.href);
+        url.searchParams.set(APP_REFRESH_PARAM, latestVersion);
+        window.location.replace(url.toString());
     }
 
     async function initializeOneDrive() {
@@ -1084,11 +1335,25 @@
             if (typeof state.sync.msal.initialize === 'function') {
                 await state.sync.msal.initialize();
             }
+            if (isManualLogoutActive()) {
+                clearAuthReloadState();
+                clearStaleMsalInteractionStatus();
+                clearOneDriveMsalCache();
+                clearOneDriveMsalCookies();
+                state.sync.account = null;
+                state.sync.allowInteractiveTokenRedirect = false;
+                state.sync.msal.setActiveAccount?.(null);
+                setSyncStatus('local', 'Nicht angemeldet', 'Deine Daten werden lokal auf diesem Geraet gespeichert.');
+                return;
+            }
             const redirectResponse = await state.sync.msal.handleRedirectPromise();
+            rememberRedirectToken(redirectResponse);
+            clearOneDriveRedirectResponseUrl();
             const accounts = state.sync.msal.getAllAccounts();
             state.sync.account = redirectResponse?.account || accounts[0] || null;
             if (state.sync.account) {
-                clearLoginPending();
+                clearAuthReloadState();
+                setManualLogout(false);
                 state.sync.msal.setActiveAccount(state.sync.account);
                 await syncFromOneDrive();
             } else {
@@ -1098,7 +1363,7 @@
             const accounts = state.sync.msal?.getAllAccounts?.() || [];
             state.sync.account = accounts[0] || null;
             if (state.sync.account) {
-                clearLoginPending();
+                setManualLogout(false);
                 state.sync.msal.setActiveAccount(state.sync.account);
                 setSyncStatus('loading', 'Microsoft-Anmeldung erkannt', 'OneDrive wird erneut geprüft.');
                 await syncFromOneDrive();
@@ -3240,24 +3505,18 @@
     };
 
     // ── Init ──
-    $('#syncButton')?.addEventListener('click', () => {
-        if (state.sync.conflictData) {
-            void syncFromOneDrive({ forceRemote: true });
-            return;
-        }
-        if (state.sync.account) {
-            void manualSyncOneDrive();
-        } else {
-            setSyncStatus('local', 'Nicht angemeldet', 'Bitte melde dich zuerst mit OneDrive an.');
-        }
+    $('#syncButton')?.addEventListener('click', toggleSyncMenu);
+    $('#syncMenuPrimary')?.addEventListener('click', runOneDrivePrimaryAction);
+    $('#syncMenuRenew')?.addEventListener('click', renewOneDriveLogin);
+    $('#syncMenuLogout')?.addEventListener('click', (event) => {
+        closeSyncMenu();
+        void logoutFromOneDrive(event);
     });
-
-    $('#syncAuthButton')?.addEventListener('click', () => {
-        if (state.sync.account) {
-            void logoutFromOneDrive();
-        } else {
-            void loginToOneDrive();
-        }
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest?.('#syncMenu')) closeSyncMenu();
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeSyncMenu();
     });
 
     $('#tips-toc')?.addEventListener('click', (event) => {
@@ -3271,54 +3530,59 @@
         clearAppUrlHash();
     });
 
-    load();
-    populateSelects();
-    setupRichTextTextarea('#tip-text');
-    setupRichTextTextarea('#edit-tip-text');
-    $('#filter-date').value = todayStr();
-    $('#vday-date').value = todayStr();
-    state.vdayDate = todayStr();
+    (async function initialize() {
+        await ensureLatestAppVersion();
+        clearAuthReloadParam();
 
-    const reloadView = sessionStorage.getItem('dtt_reload_view');
-    sessionStorage.removeItem('dtt_reload_view');
+        load();
+        populateSelects();
+        setupRichTextTextarea('#tip-text');
+        setupRichTextTextarea('#edit-tip-text');
+        $('#filter-date').value = todayStr();
+        $('#vday-date').value = todayStr();
+        state.vdayDate = todayStr();
 
-    if (location.hash.startsWith('#tip-')) {
-        clearAppUrlHash();
-    } else if (reloadView === 'vday' || location.hash === '#vday') {
-        clearAppUrlHash();
-        $$('.nav-btn').forEach((b) => b.classList.remove('active'));
-        $$('.view').forEach((v) => v.classList.remove('active'));
-        $('[data-view="vday"]').classList.add('active');
-        $('#vday').classList.add('active');
-        renderVDay();
-    } else if (reloadView === 'search' || location.hash === '#search') {
-        clearAppUrlHash();
-        $$('.nav-btn').forEach((b) => b.classList.remove('active'));
-        $$('.view').forEach((v) => v.classList.remove('active'));
-        $('[data-view="search"]').classList.add('active');
-        $('#search').classList.add('active');
-        initSearchMultiSelects();
-    } else if (reloadView === 'entries' || location.hash === '#entries') {
-        clearAppUrlHash();
-        $$('.nav-btn').forEach((b) => b.classList.remove('active'));
-        $$('.view').forEach((v) => v.classList.remove('active'));
-        $('[data-view="entries"]').classList.add('active');
-        $('#entries').classList.add('active');
-        renderEntries();
-    } else if (reloadView === 'reports' || location.hash === '#reports') {
-        clearAppUrlHash();
-        $$('.nav-btn').forEach((b) => b.classList.remove('active'));
-        $$('.view').forEach((v) => v.classList.remove('active'));
-        $('[data-view="reports"]').classList.add('active');
-        $('#reports').classList.add('active');
-        state.reportPeriod = 'day';
-        state.reportOffset = 0;
-        $$('.report-tab').forEach((t) => t.classList.remove('active'));
-        $('[data-period="day"]').classList.add('active');
-        updateReportNav();
-        renderReports();
-    } else if (reloadView === 'tracker') {
-        clearAppUrlHash();
-    }
-    void initializeOneDrive();
+        const reloadView = sessionStorage.getItem('dtt_reload_view');
+        sessionStorage.removeItem('dtt_reload_view');
+
+        if (location.hash.startsWith('#tip-')) {
+            clearAppUrlHash();
+        } else if (reloadView === 'vday' || location.hash === '#vday') {
+            clearAppUrlHash();
+            $$('.nav-btn').forEach((b) => b.classList.remove('active'));
+            $$('.view').forEach((v) => v.classList.remove('active'));
+            $('[data-view="vday"]').classList.add('active');
+            $('#vday').classList.add('active');
+            renderVDay();
+        } else if (reloadView === 'search' || location.hash === '#search') {
+            clearAppUrlHash();
+            $$('.nav-btn').forEach((b) => b.classList.remove('active'));
+            $$('.view').forEach((v) => v.classList.remove('active'));
+            $('[data-view="search"]').classList.add('active');
+            $('#search').classList.add('active');
+            initSearchMultiSelects();
+        } else if (reloadView === 'entries' || location.hash === '#entries') {
+            clearAppUrlHash();
+            $$('.nav-btn').forEach((b) => b.classList.remove('active'));
+            $$('.view').forEach((v) => v.classList.remove('active'));
+            $('[data-view="entries"]').classList.add('active');
+            $('#entries').classList.add('active');
+            renderEntries();
+        } else if (reloadView === 'reports' || location.hash === '#reports') {
+            clearAppUrlHash();
+            $$('.nav-btn').forEach((b) => b.classList.remove('active'));
+            $$('.view').forEach((v) => v.classList.remove('active'));
+            $('[data-view="reports"]').classList.add('active');
+            $('#reports').classList.add('active');
+            state.reportPeriod = 'day';
+            state.reportOffset = 0;
+            $$('.report-tab').forEach((t) => t.classList.remove('active'));
+            $('[data-period="day"]').classList.add('active');
+            updateReportNav();
+            renderReports();
+        } else if (reloadView === 'tracker') {
+            clearAppUrlHash();
+        }
+        await initializeOneDrive();
+    }());
 })();

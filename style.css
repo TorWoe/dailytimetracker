@@ -1447,16 +1447,13 @@ header h1 {
     outline: none;
 }
 
-.onedrive-actions {
+.sync-menu {
+    position: relative;
     display: inline-flex;
-    align-items: center;
     justify-content: flex-end;
-    gap: 8px;
-    flex: 0 0 auto;
 }
 
-.sync-button,
-.sync-auth-button {
+.sync-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1465,9 +1462,6 @@ header h1 {
     font-size: 0.84rem;
     font-weight: 700;
     transition: transform 0.18s ease, border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
-}
-
-.sync-button {
     gap: 8px;
     padding: 0 13px;
     border: 1px solid rgba(37, 99, 235, 0.14);
@@ -1476,23 +1470,70 @@ header h1 {
     box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
 }
 
-.sync-auth-button {
-    padding: 0 16px;
-    border: 1px solid rgba(15, 23, 42, 0.08);
-    color: var(--text);
-    background: rgba(15, 23, 42, 0.045);
-}
-
-.sync-button:hover:not(:disabled),
-.sync-auth-button:hover:not(:disabled) {
+.sync-button:hover:not(:disabled) {
     transform: translateY(-1px);
     border-color: rgba(37, 99, 235, 0.32);
 }
 
-.sync-button:disabled,
-.sync-auth-button:disabled {
+.sync-button:disabled {
     cursor: wait;
     opacity: 0.65;
+}
+
+.sync-button[data-busy="true"] {
+    cursor: pointer;
+    opacity: 0.78;
+}
+
+.sync-caret {
+    font-size: 0.74rem;
+    line-height: 1;
+    transform: translateY(-1px);
+}
+
+.sync-menu-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 10;
+    display: none;
+    min-width: 210px;
+    padding: 8px;
+    border: 1px solid rgba(37, 99, 235, 0.14);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: var(--shadow-panel);
+}
+
+.sync-menu[data-open="true"] .sync-menu-panel {
+    display: grid;
+    gap: 6px;
+}
+
+.sync-menu-panel button {
+    width: 100%;
+    min-height: 38px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.83rem;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+    padding: 0 12px;
+}
+
+.sync-menu-panel button:hover:not(:disabled),
+.sync-menu-panel button:focus-visible {
+    background: rgba(37, 99, 235, 0.08);
+    outline: none;
+}
+
+.sync-menu-panel button:disabled {
+    cursor: wait;
+    opacity: 0.6;
 }
 
 .sync-icon {
@@ -2621,7 +2662,7 @@ body.vday-resizing {
         margin-bottom: 18px;
     }
 
-    .onedrive-actions {
+    .sync-menu {
         align-self: flex-start;
     }
 
@@ -2663,19 +2704,23 @@ body.vday-resizing {
         margin-bottom: 18px;
     }
 
-    .onedrive-actions {
+    .sync-menu {
         width: 100%;
-        flex-wrap: wrap;
     }
 
-    .sync-button,
-    .sync-auth-button {
-        flex: 1 1 150px;
+    .sync-button {
+        width: 100%;
     }
 
     .sync-panel,
     .sync-panel[data-has-message="true"] {
         width: 100%;
+    }
+
+    .sync-menu-panel {
+        left: 0;
+        right: auto;
+        width: min(100%, 260px);
     }
 
     nav {
