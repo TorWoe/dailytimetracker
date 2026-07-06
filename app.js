@@ -1866,7 +1866,7 @@
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: !enlarged,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false },
                     tooltip: { callbacks: { label: (ctx) => fmtMinToHM(ctx.raw) } },
