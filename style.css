@@ -536,7 +536,7 @@ input::placeholder {
     padding: 16px;
 }
 
-.chart-box-daily canvas {
+.chart-box canvas {
     display: block;
     width: 100% !important;
     height: 240px !important;
@@ -1279,7 +1279,7 @@ input::placeholder {
         grid-template-columns: 1fr;
     }
 
-    .chart-box-daily canvas {
+    .chart-box canvas {
         height: 190px !important;
     }
 }
