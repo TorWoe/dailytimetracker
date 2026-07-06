@@ -403,6 +403,19 @@
         </div>
     </div>
 
+    <!-- Chart Zoom Modal -->
+    <div class="modal-overlay" id="chart-modal" hidden>
+        <div class="modal chart-modal">
+            <div class="chart-modal-head">
+                <h3 id="chart-modal-title">Tagesverlauf</h3>
+                <button class="btn btn-secondary btn-small" id="chart-modal-close" type="button">Schlie&szlig;en</button>
+            </div>
+            <div class="chart-modal-body">
+                <canvas id="chart-modal-canvas"></canvas>
+            </div>
+        </div>
+    </div>
+
     <script src="vendor/msal-browser.min.js?v=2.38.3"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="default-tips.js"></script>

@@ -1831,10 +1831,79 @@
     let entriesChartProjects = null;
     let entriesChartCategories = null;
     let entriesChartDaily = null;
+    let chartModalChart = null;
+    const dailyChartZoomData = new Map();
 
     function destroyChart(chart) {
         if (chart) chart.destroy();
         return null;
+    }
+
+    function formatChartDateLabel(dateStr) {
+        const [year, month, day] = String(dateStr).split('-');
+        return year && month && day ? `${day}.${month}.${year}` : dateStr;
+    }
+
+    function dailyBarChartConfig(labels, values, options = {}) {
+        const enlarged = options.enlarged === true;
+        return {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: '#4a90d9',
+                    borderRadius: enlarged ? 6 : 4,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: !enlarged,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (ctx) => fmtMinToHM(ctx.raw) } },
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: '#8899aa',
+                            font: { size: enlarged ? 12 : 10 },
+                            maxRotation: 45,
+                            minRotation: 0,
+                        },
+                        grid: { display: false },
+                    },
+                    y: {
+                        ticks: { color: '#8899aa' },
+                        grid: { color: '#2a3a5e' },
+                        title: { display: true, text: 'Minuten', color: '#8899aa' },
+                    },
+                },
+            },
+        };
+    }
+
+    function registerDailyChartZoom(canvasId, title, labels, values) {
+        dailyChartZoomData.set(canvasId, { title, labels, values });
+        $(`#${canvasId}`)?.closest('.chart-box')?.classList.add('chart-box-zoomable');
+    }
+
+    function closeChartModal() {
+        chartModalChart = destroyChart(chartModalChart);
+        const modal = $('#chart-modal');
+        if (modal) modal.hidden = true;
+    }
+
+    function openChartModal(canvasId) {
+        const chartData = dailyChartZoomData.get(canvasId);
+        const modal = $('#chart-modal');
+        const canvas = $('#chart-modal-canvas');
+        if (!chartData || !modal || !canvas) return;
+
+        $('#chart-modal-title').textContent = chartData.title;
+        modal.hidden = false;
+        chartModalChart = destroyChart(chartModalChart);
+        chartModalChart = new Chart(canvas, dailyBarChartConfig(chartData.labels, chartData.values, { enlarged: true }));
     }
 
     function updateReportNav() {
@@ -2046,33 +2115,11 @@
 
         if (chartDaily) chartDaily.destroy();
         const dayLabels = Object.keys(dayMap);
-        const shortLabels = dayLabels.map((d) => {
-            const dt = new Date(d + 'T00:00:00');
-            return dt.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric' });
-        });
+        const shortLabels = dayLabels.map(formatChartDateLabel);
+        const dayValues = dayLabels.map((d) => Math.round(dayMap[d] / 60));
 
-        chartDaily = new Chart($('#chart-daily'), {
-            type: 'bar',
-            data: {
-                labels: shortLabels,
-                datasets: [{
-                    data: dayLabels.map((d) => Math.round(dayMap[d] / 60)),
-                    backgroundColor: '#4a90d9',
-                    borderRadius: 4,
-                }],
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { callbacks: { label: (ctx) => fmtMinToHM(ctx.raw) } },
-                },
-                scales: {
-                    x: { ticks: { color: '#8899aa' }, grid: { display: false } },
-                    y: { ticks: { color: '#8899aa' }, grid: { color: '#2a3a5e' }, title: { display: true, text: 'Minuten', color: '#8899aa' } },
-                },
-            },
-        });
+        chartDaily = new Chart($('#chart-daily'), dailyBarChartConfig(shortLabels, dayValues));
+        registerDailyChartZoom('chart-daily', 'Tagesverlauf', shortLabels, dayValues);
     }
 
     function renderEntriesCharts(entries) {
@@ -2162,33 +2209,11 @@
 
         if (entriesChartDaily) entriesChartDaily.destroy();
         const dayLabels = Object.keys(dayMap);
-        const shortLabels = dayLabels.map((d) => {
-            const dt = new Date(d + 'T00:00:00');
-            return dt.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric' });
-        });
+        const shortLabels = dayLabels.map(formatChartDateLabel);
+        const dayValues = dayLabels.map((d) => Math.round(dayMap[d] / 60));
 
-        entriesChartDaily = new Chart($('#entries-chart-daily'), {
-            type: 'bar',
-            data: {
-                labels: shortLabels,
-                datasets: [{
-                    data: dayLabels.map((d) => Math.round(dayMap[d] / 60)),
-                    backgroundColor: '#4a90d9',
-                    borderRadius: 4,
-                }],
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { callbacks: { label: (ctx) => fmtMinToHM(ctx.raw) } },
-                },
-                scales: {
-                    x: { ticks: { color: '#8899aa' }, grid: { display: false } },
-                    y: { ticks: { color: '#8899aa' }, grid: { color: '#2a3a5e' }, title: { display: true, text: 'Minuten', color: '#8899aa' } },
-                },
-            },
-        });
+        entriesChartDaily = new Chart($('#entries-chart-daily'), dailyBarChartConfig(shortLabels, dayValues));
+        registerDailyChartZoom('entries-chart-daily', 'Tagesverlauf', shortLabels, dayValues);
     }
 
     function renderSearchCharts(entries) {
@@ -2278,36 +2303,23 @@
 
         if (searchChartDaily) searchChartDaily.destroy();
         const dayLabels = Object.keys(dayMap);
-        const shortLabels = dayLabels.map((d) => {
-            const dt = new Date(d + 'T00:00:00');
-            return dt.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric' });
-        });
+        const shortLabels = dayLabels.map(formatChartDateLabel);
+        const dayValues = dayLabels.map((d) => Math.round(dayMap[d] / 60));
 
-        searchChartDaily = new Chart($('#search-chart-daily'), {
-            type: 'bar',
-            data: {
-                labels: shortLabels,
-                datasets: [{
-                    data: dayLabels.map((d) => Math.round(dayMap[d] / 60)),
-                    backgroundColor: '#4a90d9',
-                    borderRadius: 4,
-                }],
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { callbacks: { label: (ctx) => fmtMinToHM(ctx.raw) } },
-                },
-                scales: {
-                    x: { ticks: { color: '#8899aa' }, grid: { display: false } },
-                    y: { ticks: { color: '#8899aa' }, grid: { color: '#2a3a5e' }, title: { display: true, text: 'Minuten', color: '#8899aa' } },
-                },
-            },
-        });
+        searchChartDaily = new Chart($('#search-chart-daily'), dailyBarChartConfig(shortLabels, dayValues));
+        registerDailyChartZoom('search-chart-daily', 'Tagesverlauf', shortLabels, dayValues);
     }
 
     // ── Search ──
+    ['entries-chart-daily', 'search-chart-daily', 'chart-daily'].forEach((canvasId) => {
+        $(`#${canvasId}`)?.addEventListener('click', () => openChartModal(canvasId));
+    });
+
+    $('#chart-modal-close')?.addEventListener('click', closeChartModal);
+    $('#chart-modal')?.addEventListener('click', (event) => {
+        if (event.target === $('#chart-modal')) closeChartModal();
+    });
+
     function updateMultiSelectLabel(container) {
         const toggle = container.querySelector('.multi-select-toggle');
         const checked = container.querySelectorAll('.multi-select-dropdown input:checked');
