@@ -649,7 +649,10 @@
         populateSelects();
         renderVDayIfActive();
         if ($('#entries')?.classList.contains('active')) renderEntries();
-        if ($('#reports')?.classList.contains('active')) renderReports();
+        if ($('#reports')?.classList.contains('active')) {
+            initReportMultiSelects();
+            renderReports();
+        }
         if ($('#search')?.classList.contains('active')) initSearchMultiSelects();
         if ($('#tips')?.classList.contains('active')) renderTips();
         if ($('#settings')?.classList.contains('active')) renderSettings();
@@ -1180,7 +1183,10 @@
             $(`#${btn.dataset.view}`).classList.add('active');
             if (btn.dataset.view === 'vday') renderVDay();
             if (btn.dataset.view === 'entries') renderEntries();
-            if (btn.dataset.view === 'reports') renderReports();
+            if (btn.dataset.view === 'reports') {
+                initReportMultiSelects();
+                renderReports();
+            }
             if (btn.dataset.view === 'search') initSearchMultiSelects();
             if (btn.dataset.view === 'tips') renderTips();
             if (btn.dataset.view === 'settings') renderSettings();
@@ -1951,6 +1957,17 @@
         $('.report-nav').style.display = isCustom ? 'none' : '';
     }
 
+    function initReportMultiSelects() {
+        populateMultiSelect('report-project-select', state.projects, 'Alle Projekte', {
+            showAllAction: true,
+            onChange: renderReports,
+        });
+        populateMultiSelect('report-category-select', state.categories, 'Alle Kategorien', {
+            showAllAction: true,
+            onChange: renderReports,
+        });
+    }
+
     $$('.report-tab').forEach((tab) => {
         tab.addEventListener('click', () => {
             $$('.report-tab').forEach((t) => t.classList.remove('active'));
@@ -1996,6 +2013,8 @@
     });
 
     $('#btn-report-reset').addEventListener('click', () => {
+        clearMultiSelect('report-project-select');
+        clearMultiSelect('report-category-select');
         sessionStorage.setItem('dtt_reload_view', 'reports');
         clearAppUrlHash();
         window.location.reload();
@@ -2058,8 +2077,11 @@
     }
 
     function renderReports() {
+        initReportMultiSelects();
         const { start, end, label } = getReportRange();
         const selectedType = getSelectedEntryType('reports-entry-type');
+        const selectedProjects = getMultiSelectValues('report-project-select');
+        const selectedCategories = getMultiSelectValues('report-category-select');
         $('#report-date-label').textContent = label;
 
         const chartContainer = $('#report-charts-container');
@@ -2074,7 +2096,11 @@
         }
 
         chartContainer.style.display = '';
-        const rangeEntries = state.entries.filter((e) => e.date >= start && e.date <= end);
+        const rangeEntries = state.entries.filter((e) => {
+            const projectMatches = selectedProjects.length === 0 || selectedProjects.includes(e.project);
+            const categoryMatches = selectedCategories.length === 0 || selectedCategories.includes(e.category);
+            return e.date >= start && e.date <= end && projectMatches && categoryMatches;
+        });
         const entries = rangeEntries.filter((e) => normalizeEntryType(e.entryType) === selectedType);
         renderSummaryCards('#report-summary', entries);
         renderCharts(entries, start, rangeEntries);
