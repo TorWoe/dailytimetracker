@@ -40,8 +40,8 @@
                 <button class="nav-btn active" data-view="tracker">Timer</button>
                 <button class="nav-btn" data-view="vday">vDay</button>
                 <button class="nav-btn" data-view="entries">Einträge</button>
-                <button class="nav-btn" data-view="reports">Berichte</button>
                 <button class="nav-btn" data-view="search">Suche</button>
+                <button class="nav-btn" data-view="reports">Berichte</button>
                 <button class="nav-btn" data-view="tips">Tipps</button>
                 <button class="nav-btn" data-view="settings">Einstellungen</button>
             </nav>
@@ -188,49 +188,6 @@
             </div>
         </section>
 
-        <!-- Reports View -->
-        <section id="reports" class="view">
-            <div class="reports-header">
-                <h2>Berichte</h2>
-                <div class="entry-type-row" id="reports-entry-type-row">
-                    <label><input type="radio" name="reports-entry-type" value="erfolgt" checked> erfolgt</label>
-                    <label><input type="radio" name="reports-entry-type" value="geplant"> geplant</label>
-                </div>
-                <div class="report-controls">
-                    <button class="report-tab active" data-period="day">Tag</button>
-                    <button class="report-tab" data-period="week">Woche</button>
-                    <button class="report-tab" data-period="month">Monat</button>
-                    <button class="report-tab" data-period="year">Jahr</button>
-                </div>
-                <div class="report-nav">
-                    <button id="report-prev" class="btn btn-small">&larr;</button>
-                    <span id="report-date-label"></span>
-                    <button id="report-next" class="btn btn-small">&rarr;</button>
-                    <button id="btn-report-reset" class="btn btn-secondary btn-small" style="margin-left:10px;">Reset</button>
-                </div>
-                <div class="report-custom-range">
-                    <label>Von <input type="date" id="report-range-start"></label>
-                    <label>Bis <input type="date" id="report-range-end"></label>
-                    <button class="btn btn-primary btn-small" id="report-range-apply">Anwenden</button>
-                </div>
-            </div>
-            <div class="report-summary" id="report-summary"></div>
-            <div class="charts-container" id="report-charts-container">
-                <div class="chart-box">
-                    <h3>Zeit pro Projekt</h3>
-                    <canvas id="chart-projects"></canvas>
-                </div>
-                <div class="chart-box">
-                    <h3>Zeit pro Kategorie</h3>
-                    <canvas id="chart-categories"></canvas>
-                </div>
-                <div class="chart-box">
-                    <h3>Tagesverlauf</h3>
-                    <canvas id="chart-daily"></canvas>
-                </div>
-            </div>
-        </section>
-
         <!-- Search View -->
         <section id="search" class="view">
             <div class="search-header">
@@ -281,6 +238,49 @@
                 <h3 class="search-block-title">Tipps</h3>
                 <div class="search-tips-count" id="search-tips-count"></div>
                 <div class="tips-list" id="search-tips-results"></div>
+            </div>
+        </section>
+
+        <!-- Reports View -->
+        <section id="reports" class="view">
+            <div class="reports-header">
+                <h2>Berichte</h2>
+                <div class="entry-type-row" id="reports-entry-type-row">
+                    <label><input type="radio" name="reports-entry-type" value="erfolgt" checked> erfolgt</label>
+                    <label><input type="radio" name="reports-entry-type" value="geplant"> geplant</label>
+                </div>
+                <div class="report-controls">
+                    <button class="report-tab active" data-period="day">Tag</button>
+                    <button class="report-tab" data-period="week">Woche</button>
+                    <button class="report-tab" data-period="month">Monat</button>
+                    <button class="report-tab" data-period="year">Jahr</button>
+                </div>
+                <div class="report-nav">
+                    <button id="report-prev" class="btn btn-small">&larr;</button>
+                    <span id="report-date-label"></span>
+                    <button id="report-next" class="btn btn-small">&rarr;</button>
+                    <button id="btn-report-reset" class="btn btn-secondary btn-small" style="margin-left:10px;">Reset</button>
+                </div>
+                <div class="report-custom-range">
+                    <label>Von <input type="date" id="report-range-start"></label>
+                    <label>Bis <input type="date" id="report-range-end"></label>
+                    <button class="btn btn-primary btn-small" id="report-range-apply">Anwenden</button>
+                </div>
+            </div>
+            <div class="report-summary" id="report-summary"></div>
+            <div class="charts-container" id="report-charts-container">
+                <div class="chart-box">
+                    <h3>Zeit pro Projekt</h3>
+                    <canvas id="chart-projects"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h3>Zeit pro Kategorie</h3>
+                    <canvas id="chart-categories"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h3>Tagesverlauf</h3>
+                    <canvas id="chart-daily"></canvas>
+                </div>
             </div>
         </section>
 
