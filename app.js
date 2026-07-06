@@ -1705,6 +1705,11 @@
         if (filterProject) filtered = filtered.filter((e) => e.project === filterProject);
         if (filterCategory) filtered = filtered.filter((e) => e.category === filterCategory);
 
+        let chartEntries = [...state.entries];
+        if (filterDate) chartEntries = chartEntries.filter((e) => e.date === filterDate);
+        if (filterProject) chartEntries = chartEntries.filter((e) => e.project === filterProject);
+        if (filterCategory) chartEntries = chartEntries.filter((e) => e.category === filterCategory);
+
         filtered.sort((a, b) => {
             if (a.date !== b.date) return b.date.localeCompare(a.date);
             return b.start.localeCompare(a.start);
@@ -1713,7 +1718,7 @@
         if (filtered.length === 0) {
             list.innerHTML = '<div class="no-entries">Keine Einträge gefunden.</div>';
             renderSummaryCards('#entries-summary', [], { showAverage: false });
-            renderEntriesCharts([]);
+            renderEntriesCharts([], chartEntries);
             return;
         }
 
@@ -1747,7 +1752,7 @@
             .join('');
 
         renderSummaryCards('#entries-summary', filtered, { showAverage: false });
-        renderEntriesCharts(filtered);
+        renderEntriesCharts(filtered, chartEntries);
     }
 
     $('#filter-date').addEventListener('change', renderEntries);
@@ -1831,6 +1836,9 @@
     let entriesChartProjects = null;
     let entriesChartCategories = null;
     let entriesChartDaily = null;
+    let chartDailyPlanned = null;
+    let searchChartDailyPlanned = null;
+    let entriesChartDailyPlanned = null;
     let chartModalChart = null;
     const dailyChartZoomData = new Map();
 
@@ -1886,6 +1894,38 @@
     function registerDailyChartZoom(canvasId, title, labels, values) {
         dailyChartZoomData.set(canvasId, { title, labels, values });
         $(`#${canvasId}`)?.closest('.chart-box')?.classList.add('chart-box-zoomable');
+    }
+
+    function buildDailyChartSeries(entries, startDate = '') {
+        const dates = entries.map((entry) => entry.date).filter(Boolean).sort();
+        const today = todayStr();
+        const firstDate = startDate || dates[0] || today;
+        const start = firstDate > today ? today : firstDate;
+        const dayMap = {};
+        const d = new Date(start + 'T00:00:00');
+        const endDate = new Date(today + 'T00:00:00');
+        while (d <= endDate) {
+            dayMap[localDateStr(d)] = 0;
+            d.setDate(d.getDate() + 1);
+        }
+        entries.forEach((entry) => {
+            if (dayMap[entry.date] !== undefined) dayMap[entry.date] += entry.duration;
+        });
+        const dayLabels = Object.keys(dayMap);
+        return {
+            labels: dayLabels.map(formatChartDateLabel),
+            values: dayLabels.map((date) => Math.round(dayMap[date] / 60)),
+        };
+    }
+
+    function renderDailyTaskChart(canvasId, title, entries, entryType, startDate = '') {
+        const allDates = entries.map((entry) => entry.date).filter(Boolean).sort();
+        const chartStart = startDate || allDates[0] || todayStr();
+        const filteredEntries = entries.filter((entry) => normalizeEntryType(entry.entryType) === entryType);
+        const series = buildDailyChartSeries(filteredEntries, chartStart);
+        const nextChart = new Chart($(`#${canvasId}`), dailyBarChartConfig(series.labels, series.values));
+        registerDailyChartZoom(canvasId, title, series.labels, series.values);
+        return nextChart;
     }
 
     function closeChartModal() {
@@ -2029,16 +2069,18 @@
             chartProjects = destroyChart(chartProjects);
             chartCategories = destroyChart(chartCategories);
             chartDaily = destroyChart(chartDaily);
+            chartDailyPlanned = destroyChart(chartDailyPlanned);
             return;
         }
 
         chartContainer.style.display = '';
-        const entries = state.entries.filter((e) => normalizeEntryType(e.entryType) === selectedType && e.date >= start && e.date <= end);
+        const rangeEntries = state.entries.filter((e) => e.date >= start && e.date <= end);
+        const entries = rangeEntries.filter((e) => normalizeEntryType(e.entryType) === selectedType);
         renderSummaryCards('#report-summary', entries);
-        renderCharts(entries, start, end);
+        renderCharts(entries, start, rangeEntries);
     }
 
-    function renderCharts(entries, start, end) {
+    function renderCharts(entries, start, dailyEntries = entries) {
         // Project chart
         const projectData = {};
         entries.forEach((e) => {
@@ -2101,31 +2143,20 @@
             },
         });
 
-        // Daily bar chart
-        const dayMap = {};
-        const d = new Date(start);
-        const endDate = new Date(end);
-        while (d <= endDate) {
-            dayMap[d.toISOString().slice(0, 10)] = 0;
-            d.setDate(d.getDate() + 1);
-        }
-        entries.forEach((e) => {
-            if (dayMap[e.date] !== undefined) dayMap[e.date] += e.duration;
-        });
-
-        if (chartDaily) chartDaily.destroy();
-        const dayLabels = Object.keys(dayMap);
-        const shortLabels = dayLabels.map(formatChartDateLabel);
-        const dayValues = dayLabels.map((d) => Math.round(dayMap[d] / 60));
-
-        chartDaily = new Chart($('#chart-daily'), dailyBarChartConfig(shortLabels, dayValues));
-        registerDailyChartZoom('chart-daily', 'Tagesverlauf', shortLabels, dayValues);
+        chartDaily = destroyChart(chartDaily);
+        chartDailyPlanned = destroyChart(chartDailyPlanned);
+        chartDaily = renderDailyTaskChart('chart-daily', 'Tagesverlauf - erfolgte Aufgaben', dailyEntries, 'erfolgt', start);
+        chartDailyPlanned = renderDailyTaskChart('chart-daily-planned', 'Tagesverlauf - geplante Aufgaben', dailyEntries, 'geplant', start);
     }
 
-    function renderEntriesCharts(entries) {
+    function renderEntriesCharts(entries, dailyEntries = entries) {
         const container = $('#entries-charts-container');
-        if (entries.length === 0) {
+        if (entries.length === 0 && dailyEntries.length === 0) {
             container.style.display = 'none';
+            entriesChartProjects = destroyChart(entriesChartProjects);
+            entriesChartCategories = destroyChart(entriesChartCategories);
+            entriesChartDaily = destroyChart(entriesChartDaily);
+            entriesChartDailyPlanned = destroyChart(entriesChartDailyPlanned);
             return;
         }
         container.style.display = '';
@@ -2192,34 +2223,21 @@
             },
         });
 
-        // Daily bar chart – derive date range from entries
-        const dates = entries.map((e) => e.date).sort();
-        const start = dates[0];
-        const end = dates[dates.length - 1];
-        const dayMap = {};
-        const d = new Date(start);
-        const endDate = new Date(end);
-        while (d <= endDate) {
-            dayMap[d.toISOString().slice(0, 10)] = 0;
-            d.setDate(d.getDate() + 1);
-        }
-        entries.forEach((e) => {
-            if (dayMap[e.date] !== undefined) dayMap[e.date] += e.duration;
-        });
-
-        if (entriesChartDaily) entriesChartDaily.destroy();
-        const dayLabels = Object.keys(dayMap);
-        const shortLabels = dayLabels.map(formatChartDateLabel);
-        const dayValues = dayLabels.map((d) => Math.round(dayMap[d] / 60));
-
-        entriesChartDaily = new Chart($('#entries-chart-daily'), dailyBarChartConfig(shortLabels, dayValues));
-        registerDailyChartZoom('entries-chart-daily', 'Tagesverlauf', shortLabels, dayValues);
+        // Daily task charts
+        entriesChartDaily = destroyChart(entriesChartDaily);
+        entriesChartDailyPlanned = destroyChart(entriesChartDailyPlanned);
+        entriesChartDaily = renderDailyTaskChart('entries-chart-daily', 'Tagesverlauf - erfolgte Aufgaben', dailyEntries, 'erfolgt');
+        entriesChartDailyPlanned = renderDailyTaskChart('entries-chart-daily-planned', 'Tagesverlauf - geplante Aufgaben', dailyEntries, 'geplant');
     }
 
-    function renderSearchCharts(entries) {
+    function renderSearchCharts(entries, dailyEntries = entries) {
         const container = $('#search-charts-container');
-        if (entries.length === 0) {
+        if (entries.length === 0 && dailyEntries.length === 0) {
             container.style.display = 'none';
+            searchChartProjects = destroyChart(searchChartProjects);
+            searchChartCategories = destroyChart(searchChartCategories);
+            searchChartDaily = destroyChart(searchChartDaily);
+            searchChartDailyPlanned = destroyChart(searchChartDailyPlanned);
             return;
         }
         container.style.display = '';
@@ -2286,32 +2304,15 @@
             },
         });
 
-        // Daily bar chart – derive date range from entries
-        const dates = entries.map((e) => e.date).sort();
-        const start = dates[0];
-        const end = dates[dates.length - 1];
-        const dayMap = {};
-        const d = new Date(start);
-        const endDate = new Date(end);
-        while (d <= endDate) {
-            dayMap[d.toISOString().slice(0, 10)] = 0;
-            d.setDate(d.getDate() + 1);
-        }
-        entries.forEach((e) => {
-            if (dayMap[e.date] !== undefined) dayMap[e.date] += e.duration;
-        });
-
-        if (searchChartDaily) searchChartDaily.destroy();
-        const dayLabels = Object.keys(dayMap);
-        const shortLabels = dayLabels.map(formatChartDateLabel);
-        const dayValues = dayLabels.map((d) => Math.round(dayMap[d] / 60));
-
-        searchChartDaily = new Chart($('#search-chart-daily'), dailyBarChartConfig(shortLabels, dayValues));
-        registerDailyChartZoom('search-chart-daily', 'Tagesverlauf', shortLabels, dayValues);
+        // Daily task charts
+        searchChartDaily = destroyChart(searchChartDaily);
+        searchChartDailyPlanned = destroyChart(searchChartDailyPlanned);
+        searchChartDaily = renderDailyTaskChart('search-chart-daily', 'Tagesverlauf - erfolgte Aufgaben', dailyEntries, 'erfolgt');
+        searchChartDailyPlanned = renderDailyTaskChart('search-chart-daily-planned', 'Tagesverlauf - geplante Aufgaben', dailyEntries, 'geplant');
     }
 
     // ── Search ──
-    ['entries-chart-daily', 'search-chart-daily', 'chart-daily'].forEach((canvasId) => {
+    ['entries-chart-daily', 'entries-chart-daily-planned', 'search-chart-daily', 'search-chart-daily-planned', 'chart-daily', 'chart-daily-planned'].forEach((canvasId) => {
         $(`#${canvasId}`)?.addEventListener('click', () => openChartModal(canvasId));
     });
 
@@ -2452,6 +2453,28 @@
         return { filtered, query, selectedType, selectedProjects, selectedCategories };
     }
 
+    function getSearchChartEntries(query, selectedProjects, selectedCategories) {
+        let filtered = [...state.entries];
+
+        if (query) {
+            filtered = filtered.filter((e) => {
+                const taskMatch = e.task.toLowerCase().includes(query);
+                const tagMatch = (e.tags || []).some((t) => t.toLowerCase().includes(query));
+                return taskMatch || tagMatch;
+            });
+        }
+
+        if (selectedProjects.length > 0) {
+            filtered = filtered.filter((e) => selectedProjects.includes(e.project));
+        }
+
+        if (selectedCategories.length > 0) {
+            filtered = filtered.filter((e) => selectedCategories.includes(e.category));
+        }
+
+        return filtered;
+    }
+
     function getSearchFilteredTips(query) {
         if (!query) return [];
         return state.tips.filter((t) => {
@@ -2477,6 +2500,7 @@
 
     function renderSearch() {
         const { filtered, query, selectedType, selectedProjects, selectedCategories } = getSearchFiltered();
+        const chartEntries = getSearchChartEntries(query, selectedProjects, selectedCategories);
 
         const entriesBlock = $('#search-entries-block');
         const countEl = $('#search-result-count');
@@ -2531,7 +2555,7 @@
             renderSummaryCards('#search-summary', filtered);
         }
 
-        renderSearchCharts(filtered);
+        renderSearchCharts(filtered, chartEntries);
         const filteredTips = getSearchFilteredTips(query);
         renderSearchTips(filteredTips);
     }
@@ -2628,7 +2652,7 @@
             .join('');
 
         renderSummaryCards('#search-summary', filtered);
-        renderSearchCharts(filtered);
+        renderSearchCharts(filtered, state.entries);
         renderSearchTips(state.tips);
     });
 
