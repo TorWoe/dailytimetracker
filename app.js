@@ -1354,6 +1354,34 @@
             });
     }
 
+    function initVDayMultiSelects() {
+        populateMultiSelect('vday-project-select', state.projects, 'Alle Projekte', {
+            showAllAction: true,
+            onChange: renderVDay,
+        });
+        populateMultiSelect('vday-category-select', state.categories, 'Alle Kategorien', {
+            showAllAction: true,
+            onChange: renderVDay,
+        });
+    }
+
+    function getVDayRepoEntries() {
+        const selectedProjects = getMultiSelectValues('vday-project-select');
+        const selectedCategories = getMultiSelectValues('vday-category-select');
+
+        return plannedEntries().filter((entry) => {
+            const projectMatches = selectedProjects.length === 0 || selectedProjects.includes(entry.project);
+            const categoryMatches = selectedCategories.length === 0 || selectedCategories.includes(entry.category);
+            return projectMatches && categoryMatches;
+        });
+    }
+
+    function resetVDayFilters() {
+        clearMultiSelect('vday-project-select');
+        clearMultiSelect('vday-category-select');
+        renderVDay();
+    }
+
     function renderVDayTimeline() {
         const timeline = $('#vday-timeline');
         if (!timeline) return;
@@ -1411,6 +1439,7 @@
     function renderVDay() {
         const view = $('#vday');
         if (!view) return;
+        initVDayMultiSelects();
 
         const dateInput = $('#vday-date');
         if (dateInput && !dateInput.value) dateInput.value = state.vdayDate || todayStr();
@@ -1437,7 +1466,7 @@
                 : '<div class="vday-empty-day">Geplante Einträge hier ablegen</div>';
         }
 
-        const repoEntries = plannedEntries();
+        const repoEntries = getVDayRepoEntries();
         const repoList = $('#vday-repo-list');
         const repoCount = $('#vday-repo-count');
         if (repoCount) repoCount.textContent = `${repoEntries.length}`;
@@ -1464,6 +1493,7 @@
     $('#vday-prev')?.addEventListener('click', () => setVDayDate(shiftDateStr(getVDayDate(), -1)));
     $('#vday-next')?.addEventListener('click', () => setVDayDate(shiftDateStr(getVDayDate(), 1)));
     $('#vday-today')?.addEventListener('click', () => setVDayDate(todayStr()));
+    $('#vday-reset')?.addEventListener('click', resetVDayFilters);
 
     document.addEventListener('dragstart', (event) => {
         if (event.target.closest('.vday-resize-handle, .vday-repo-edit')) {
@@ -2225,17 +2255,62 @@
     }
 
     // ── Search ──
-    function populateMultiSelect(containerId, items, labelAll) {
+    function updateMultiSelectLabel(container) {
+        const toggle = container.querySelector('.multi-select-toggle');
+        const checked = container.querySelectorAll('.multi-select-dropdown input:checked');
+        const items = container._multiSelectItems || [];
+        const labelAll = container._multiSelectLabelAll || '';
+        if (!toggle) return;
+
+        if (checked.length === 0) {
+            toggle.textContent = labelAll;
+            return;
+        }
+
+        const names = Array.from(checked).map((cb) => {
+            const item = items.find((i) => i.id === cb.value);
+            return item ? item.name : '';
+        }).filter(Boolean);
+        toggle.textContent = names.join(', ');
+    }
+
+    function clearMultiSelect(containerId) {
         const container = $(`#${containerId}`);
+        if (!container) return;
+        container.querySelectorAll('.multi-select-dropdown input:checked').forEach((input) => {
+            input.checked = false;
+        });
+        updateMultiSelectLabel(container);
+    }
+
+    function populateMultiSelect(containerId, items, labelAll, options = {}) {
+        const container = $(`#${containerId}`);
+        if (!container) return;
         const dropdown = container.querySelector('.multi-select-dropdown');
         const toggle = container.querySelector('.multi-select-toggle');
+        const selectedValues = new Set(getMultiSelectValues(containerId));
+        container._multiSelectItems = items;
+        container._multiSelectLabelAll = labelAll;
+        container._multiSelectOnChange = options.onChange;
         dropdown.innerHTML = items
-            .map((item) => `<label class="multi-select-option">
-                <input type="checkbox" value="${item.id}">
-                <span class="color-dot" style="background:${item.color}"></span>
-                ${escHtml(item.name)}
-            </label>`)
+            .map((item) => {
+                const checked = selectedValues.has(item.id) ? ' checked' : '';
+                return `<label class="multi-select-option">
+                    <input type="checkbox" value="${item.id}"${checked}>
+                    <span class="color-dot" style="background:${item.color}"></span>
+                    ${escHtml(item.name)}
+                </label>`;
+            })
             .join('');
+
+        if (options.showAllAction) {
+            dropdown.insertAdjacentHTML('afterbegin', `<button type="button" class="multi-select-all">${escHtml(labelAll)}</button>`);
+        }
+
+        updateMultiSelectLabel(container);
+
+        if (container.dataset.multiSelectInitialized === 'true') return;
+        container.dataset.multiSelectInitialized = 'true';
 
         toggle.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -2245,17 +2320,17 @@
             dropdown.classList.toggle('open');
         });
 
+        dropdown.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!e.target.closest('.multi-select-all')) return;
+            clearMultiSelect(containerId);
+            dropdown.classList.remove('open');
+            container._multiSelectOnChange?.();
+        });
+
         dropdown.addEventListener('change', () => {
-            const checked = dropdown.querySelectorAll('input:checked');
-            if (checked.length === 0) {
-                toggle.textContent = labelAll;
-            } else {
-                const names = Array.from(checked).map((cb) => {
-                    const item = items.find((i) => i.id === cb.value);
-                    return item ? item.name : '';
-                });
-                toggle.textContent = names.join(', ');
-            }
+            updateMultiSelectLabel(container);
+            container._multiSelectOnChange?.();
         });
     }
 
@@ -2269,7 +2344,9 @@
     }
 
     function getMultiSelectValues(containerId) {
-        const checkboxes = $(`#${containerId}`).querySelectorAll('.multi-select-dropdown input:checked');
+        const container = $(`#${containerId}`);
+        if (!container) return [];
+        const checkboxes = container.querySelectorAll('.multi-select-dropdown input:checked');
         return Array.from(checkboxes).map((cb) => cb.value);
     }
 
