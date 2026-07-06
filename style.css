@@ -1918,6 +1918,7 @@ textarea:focus,
 .entries-actions-row,
 .search-filters,
 .report-controls,
+.report-filters,
 .report-nav,
 .report-custom-range,
 .tips-actions-row,
@@ -1938,6 +1939,10 @@ textarea:focus,
 .search-filters input[type="text"],
 .multi-select {
     flex: 1 1 170px;
+}
+
+.report-filters {
+    max-width: 560px;
 }
 
 #report-date-label {
@@ -2678,6 +2683,7 @@ body.vday-resizing {
     .entries-actions-row,
     .search-filters,
     .report-controls,
+    .report-filters,
     .report-nav,
     .report-custom-range,
     .search-actions-row,
@@ -2700,6 +2706,11 @@ body.vday-resizing {
 
     .vday-filter-controls .multi-select {
         flex: 0 0 auto;
+        max-width: none;
+    }
+
+    .report-filters {
+        width: 100%;
         max-width: none;
     }
 
