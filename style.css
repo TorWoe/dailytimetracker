@@ -540,6 +540,12 @@ input::placeholder {
     grid-column: 1 / -1;
 }
 
+.chart-box-daily canvas {
+    display: block;
+    width: 100% !important;
+    height: 240px !important;
+}
+
 .chart-box h3 {
     font-size: 0.95rem;
     color: var(--text-muted);
@@ -1275,6 +1281,10 @@ input::placeholder {
 
     .charts-container {
         grid-template-columns: 1fr;
+    }
+
+    .chart-box-daily canvas {
+        height: 190px !important;
     }
 }
 
