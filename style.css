@@ -2375,8 +2375,9 @@ textarea:focus,
 
 .vday-event {
     position: absolute;
-    left: 12px;
-    right: 12px;
+    left: calc(12px + var(--event-left, 0%));
+    right: auto;
+    width: calc(var(--event-width, 100%) - 18px);
     z-index: 2;
     min-height: 32px;
     overflow: hidden;
