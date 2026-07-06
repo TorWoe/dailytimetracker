@@ -2704,7 +2704,8 @@ body.vday-resizing {
         align-items: stretch;
     }
 
-    .vday-filter-controls .multi-select {
+    .vday-filter-controls .multi-select,
+    .report-filters .multi-select {
         flex: 0 0 auto;
         max-width: none;
     }
@@ -2712,6 +2713,7 @@ body.vday-resizing {
     .report-filters {
         width: 100%;
         max-width: none;
+        gap: 10px;
     }
 
     .charts-container,
