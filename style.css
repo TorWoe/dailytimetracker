@@ -2091,6 +2091,30 @@ textarea:focus,
     background: rgba(15, 23, 42, 0.04);
 }
 
+.multi-select-all {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 38px;
+    margin-bottom: 4px;
+    padding: 9px 12px;
+    border: 0;
+    border-radius: 12px;
+    background: rgba(44, 107, 237, 0.08);
+    color: var(--primary);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 800;
+    text-align: left;
+    cursor: pointer;
+}
+
+.multi-select-all:hover,
+.multi-select-all:focus-visible {
+    background: rgba(44, 107, 237, 0.14);
+    outline: none;
+}
+
 .settings-section {
     padding: 24px;
 }
@@ -2208,6 +2232,34 @@ textarea:focus,
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.vday-controls-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    min-width: min(100%, 520px);
+}
+
+.vday-filter-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.vday-filter-controls .multi-select {
+    flex: 1 1 180px;
+    min-width: 180px;
+    max-width: 240px;
+}
+
+.vday-filter-controls #vday-reset {
+    flex: 0 0 auto;
 }
 
 .vday-layout {
@@ -2567,7 +2619,9 @@ body.vday-resizing {
     .timer-controls,
     .timer-form,
     .vday-header,
+    .vday-controls-stack,
     .vday-controls,
+    .vday-filter-controls,
     .entries-filters,
     .entries-actions-row,
     .search-filters,
@@ -2583,6 +2637,17 @@ body.vday-resizing {
         flex-direction: column;
         align-items: stretch;
         grid-template-columns: 1fr;
+    }
+
+    .vday-controls-stack,
+    .vday-controls,
+    .vday-filter-controls {
+        width: 100%;
+        align-items: stretch;
+    }
+
+    .vday-filter-controls .multi-select {
+        max-width: none;
     }
 
     .charts-container,

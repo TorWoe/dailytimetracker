@@ -105,11 +105,24 @@
                     <h2>visual Day</h2>
                     <div class="vday-date-label" id="vday-date-label"></div>
                 </div>
-                <div class="vday-controls">
-                    <button id="vday-prev" class="btn btn-small">&larr;</button>
-                    <input type="date" id="vday-date">
-                    <button id="vday-next" class="btn btn-small">&rarr;</button>
-                    <button id="vday-today" class="btn btn-secondary">Heute</button>
+                <div class="vday-controls-stack">
+                    <div class="vday-controls">
+                        <button id="vday-prev" class="btn btn-small">&larr;</button>
+                        <input type="date" id="vday-date">
+                        <button id="vday-next" class="btn btn-small">&rarr;</button>
+                        <button id="vday-today" class="btn btn-secondary">Heute</button>
+                    </div>
+                    <div class="vday-filter-controls">
+                        <div class="multi-select" id="vday-project-select">
+                            <div class="multi-select-toggle">Alle Projekte</div>
+                            <div class="multi-select-dropdown"></div>
+                        </div>
+                        <div class="multi-select" id="vday-category-select">
+                            <div class="multi-select-toggle">Alle Kategorien</div>
+                            <div class="multi-select-dropdown"></div>
+                        </div>
+                        <button id="vday-reset" class="btn btn-secondary">Reset</button>
+                    </div>
                 </div>
             </div>
             <div class="vday-layout">
