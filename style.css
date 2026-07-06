@@ -536,6 +536,10 @@ input::placeholder {
     padding: 16px;
 }
 
+.chart-box-daily {
+    grid-column: 1 / -1;
+}
+
 .chart-box h3 {
     font-size: 0.95rem;
     color: var(--text-muted);
