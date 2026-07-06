@@ -372,9 +372,9 @@
             <span aria-hidden="true">&middot;</span>
             <span>&copy; 2026 Torsten Schiffner</span>
             <span aria-hidden="true">&middot;</span>
-            <a href="legal/impressum.txt" target="_blank" rel="noopener">Impressum</a>
+            <a href="./" data-legal-path="legal/impressum.txt" data-legal-title="Impressum">Impressum</a>
             <span aria-hidden="true">&middot;</span>
-            <a href="legal/datenschutz.txt" target="_blank" rel="noopener">Datenschutz</a>
+            <a href="./" data-legal-path="legal/datenschutz.txt" data-legal-title="Datenschutz">Datenschutz</a>
         </footer>
     </div>
 
@@ -435,6 +435,17 @@
             <div class="chart-modal-body">
                 <canvas id="chart-modal-canvas"></canvas>
             </div>
+        </div>
+    </div>
+
+    <!-- Legal Text Modal -->
+    <div class="modal-overlay" id="legal-modal" hidden>
+        <div class="modal legal-modal">
+            <div class="legal-modal-head">
+                <h3 id="legal-modal-title">Rechtliches</h3>
+                <button class="btn btn-secondary btn-small" id="legal-modal-close" type="button">Schlie&szlig;en</button>
+            </div>
+            <div class="legal-modal-body" id="legal-modal-body"></div>
         </div>
     </div>
 
