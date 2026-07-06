@@ -2647,6 +2647,7 @@ body.vday-resizing {
     }
 
     .vday-filter-controls .multi-select {
+        flex: 0 0 auto;
         max-width: none;
     }
 
