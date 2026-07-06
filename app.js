@@ -1392,18 +1392,70 @@
         }).join('');
     }
 
-    function renderVDayEvent(entry) {
+    function layoutVDayEvents(entries) {
+        const eventLayouts = new Map();
+        const items = entries.map((entry) => ({
+            entry,
+            start: timeToMinutes(entry.start),
+            end: entryEndMinutes(entry),
+        })).sort((a, b) => {
+            if (a.start !== b.start) return a.start - b.start;
+            if (a.end !== b.end) return a.end - b.end;
+            return a.entry.task.localeCompare(b.entry.task, 'de');
+        });
+
+        const groups = [];
+        items.forEach((item) => {
+            const currentGroup = groups[groups.length - 1];
+            if (!currentGroup || item.start >= currentGroup.end) {
+                groups.push({ items: [item], end: item.end });
+                return;
+            }
+            currentGroup.items.push(item);
+            currentGroup.end = Math.max(currentGroup.end, item.end);
+        });
+
+        groups.forEach((group) => {
+            const activeColumns = [];
+            let columnCount = 0;
+
+            group.items.forEach((item) => {
+                activeColumns.forEach((active, index) => {
+                    if (active && active.end <= item.start) activeColumns[index] = null;
+                });
+
+                let column = activeColumns.findIndex((active) => !active);
+                if (column === -1) column = activeColumns.length;
+                activeColumns[column] = { end: item.end };
+                columnCount = Math.max(columnCount, column + 1);
+                eventLayouts.set(item.entry.id, { column, columns: 1 });
+            });
+
+            group.items.forEach((item) => {
+                const layout = eventLayouts.get(item.entry.id);
+                if (layout) layout.columns = columnCount;
+            });
+        });
+
+        return eventLayouts;
+    }
+
+    function renderVDayEvent(entry, layout = { column: 0, columns: 1 }) {
         const project = state.projects.find((p) => p.id === entry.project);
         const category = state.categories.find((c) => c.id === entry.category);
         const start = timeToMinutes(entry.start);
         const end = entryEndMinutes(entry);
         const top = (start / VDAY_DAY_MINUTES) * 100;
         const height = ((end - start) / VDAY_DAY_MINUTES) * 100;
+        const columns = Math.max(1, layout.columns || 1);
+        const column = clamp(layout.column || 0, 0, columns - 1);
+        const width = 100 / columns;
+        const left = column * width;
         const color = category?.color || project?.color || '#2c6bed';
         const meta = [project?.name, category?.name].filter(Boolean).join(' · ');
         const tags = (entry.tags || []).slice(0, 2).map((tag) => `<span>${escHtml(tag)}</span>`).join('');
 
-        return `<div class="vday-event" draggable="true" data-vday-entry-id="${entry.id}" style="top:${top}%;height:${height}%;--event-color:${color}">
+        return `<div class="vday-event" draggable="true" data-vday-entry-id="${entry.id}" style="top:${top}%;height:${height}%;--event-color:${color};--event-left:${left}%;--event-width:${width}%;">
             <div class="vday-event-content">
                 <strong>${escHtml(entry.task)}</strong>
                 <small class="vday-event-time">${minutesToTime(start)} – ${minutesToTime(end)} · ${fmt(entry.duration)}</small>
@@ -1461,8 +1513,9 @@
         const dayEntries = plannedEntries().filter((entry) => entry.date === selectedDate);
         const dropzone = $('#vday-dropzone');
         if (dropzone) {
+            const eventLayouts = layoutVDayEvents(dayEntries);
             dropzone.innerHTML = dayEntries.length
-                ? dayEntries.map((entry) => renderVDayEvent(entry)).join('')
+                ? dayEntries.map((entry) => renderVDayEvent(entry, eventLayouts.get(entry.id))).join('')
                 : '<div class="vday-empty-day">Geplante Einträge hier ablegen</div>';
         }
 
