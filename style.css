@@ -1132,6 +1132,7 @@ input::placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 24px;
     z-index: 1000;
 }
 
@@ -1146,6 +1147,9 @@ input::placeholder {
     padding: 24px;
     width: 90%;
     max-width: 480px;
+    max-height: min(88vh, 860px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .modal h3 {
