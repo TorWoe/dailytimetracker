@@ -2105,6 +2105,7 @@
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: { position: 'bottom', labels: { color: '#000', padding: 12 } },
                     tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtMinToHM(ctx.raw)}` } },
@@ -2136,6 +2137,7 @@
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: { position: 'bottom', labels: { color: '#000', padding: 12 } },
                     tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtMinToHM(ctx.raw)}` } },
@@ -2185,6 +2187,7 @@
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: { position: 'bottom', labels: { color: '#000', padding: 12 } },
                     tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtMinToHM(ctx.raw)}` } },
@@ -2216,6 +2219,7 @@
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: { position: 'bottom', labels: { color: '#000', padding: 12 } },
                     tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtMinToHM(ctx.raw)}` } },
@@ -2266,6 +2270,7 @@
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: { position: 'bottom', labels: { color: '#000', padding: 12 } },
                     tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtMinToHM(ctx.raw)}` } },
@@ -2297,6 +2302,7 @@
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: { position: 'bottom', labels: { color: '#000', padding: 12 } },
                     tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtMinToHM(ctx.raw)}` } },
