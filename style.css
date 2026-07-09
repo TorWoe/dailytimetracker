@@ -1410,15 +1410,15 @@ header h1 {
 }
 
 .header-sync {
-    position: relative;
-    z-index: 2;
     position: absolute;
+    z-index: 2;
     top: 34px;
     right: 40px;
     display: grid;
     justify-items: end;
     gap: 14px;
     max-width: min(42vw, 540px);
+    padding-top: 56px;
 }
 
 .app-footer {
@@ -1448,7 +1448,10 @@ header h1 {
 }
 
 .sync-menu {
-    position: relative;
+    position: fixed;
+    top: max(24px, env(safe-area-inset-top));
+    right: max(24px, env(safe-area-inset-right));
+    z-index: 50;
     display: inline-flex;
     justify-content: flex-end;
 }
@@ -2663,6 +2666,8 @@ body.vday-resizing {
     }
 
     .sync-menu {
+        top: max(16px, env(safe-area-inset-top));
+        right: max(16px, env(safe-area-inset-right));
         align-self: flex-start;
     }
 
@@ -2704,12 +2709,8 @@ body.vday-resizing {
         margin-bottom: 18px;
     }
 
-    .sync-menu {
-        width: 100%;
-    }
-
     .sync-button {
-        width: 100%;
+        max-width: calc(100vw - 32px);
     }
 
     .sync-panel,
@@ -2718,9 +2719,8 @@ body.vday-resizing {
     }
 
     .sync-menu-panel {
-        left: 0;
-        right: auto;
-        width: min(100%, 260px);
+        right: 0;
+        width: min(calc(100vw - 32px), 260px);
     }
 
     nav {

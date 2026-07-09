@@ -8,7 +8,7 @@
         tips: 'dtt_tips',
     };
     const STORAGE_META_KEY = 'dtt_sync_meta';
-    const APP_VERSION = 'dtt-onedrive-sync-reload-20260706-1';
+    const APP_VERSION = 'dtt-fixed-sync-button-20260709-1';
     const APP_VERSION_FILE = 'app-version.json';
     const APP_REFRESH_PARAM = 'appRefresh';
     const APP_REFRESH_SESSION_KEY = 'dtt_app_refresh_version';
