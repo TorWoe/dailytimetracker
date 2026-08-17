@@ -2351,6 +2351,10 @@ textarea:focus,
     font-weight: 700;
 }
 
+.vday-entry-type-row {
+    margin-top: 12px;
+}
+
 .vday-controls {
     display: flex;
     align-items: center;
@@ -2391,6 +2395,14 @@ textarea:focus,
     grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
     gap: 18px;
     align-items: start;
+}
+
+#vday[data-entry-type="erfolgt"] .vday-layout {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+#vday[data-entry-type="erfolgt"] .vday-repository {
+    display: none;
 }
 
 .vday-board,
@@ -2513,6 +2525,11 @@ textarea:focus,
 
 .vday-event:active {
     cursor: grabbing;
+}
+
+.vday-event-readonly,
+.vday-event-readonly:active {
+    cursor: default;
 }
 
 .vday-event-content {

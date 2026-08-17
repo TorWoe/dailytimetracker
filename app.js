@@ -8,7 +8,7 @@
         tips: 'dtt_tips',
     };
     const STORAGE_META_KEY = 'dtt_sync_meta';
-    const APP_VERSION = 'dtt-fixed-sync-button-20260709-1';
+    const APP_VERSION = 'dtt-vday-entry-type-20260817-1';
     const APP_VERSION_FILE = 'app-version.json';
     const APP_REFRESH_PARAM = 'appRefresh';
     const APP_REFRESH_SESSION_KEY = 'dtt_app_refresh_version';
@@ -1615,9 +1615,13 @@
         renderVDay();
     }
 
-    function plannedEntries() {
+    function getVDayEntryType() {
+        return getSelectedEntryType('vday-entry-type') || 'geplant';
+    }
+
+    function vDayEntries(entryType = getVDayEntryType()) {
         return state.entries
-            .filter((entry) => normalizeEntryType(entry.entryType) === 'geplant')
+            .filter((entry) => normalizeEntryType(entry.entryType) === entryType)
             .sort((a, b) => {
                 if (a.date !== b.date) return a.date.localeCompare(b.date);
                 if (a.start !== b.start) return a.start.localeCompare(b.start);
@@ -1640,7 +1644,7 @@
         const selectedProjects = getMultiSelectValues('vday-project-select');
         const selectedCategories = getMultiSelectValues('vday-category-select');
 
-        return plannedEntries().filter((entry) => {
+        return vDayEntries('geplant').filter((entry) => {
             const projectMatches = selectedProjects.length === 0 || selectedProjects.includes(entry.project);
             const categoryMatches = selectedCategories.length === 0 || selectedCategories.includes(entry.category);
             return projectMatches && categoryMatches;
@@ -1725,15 +1729,16 @@
         const color = category?.color || project?.color || '#2c6bed';
         const meta = [project?.name, category?.name].filter(Boolean).join(' · ');
         const tags = (entry.tags || []).slice(0, 2).map((tag) => `<span>${escHtml(tag)}</span>`).join('');
+        const isPlanned = normalizeEntryType(entry.entryType) === 'geplant';
 
-        return `<div class="vday-event" draggable="true" data-vday-entry-id="${entry.id}" style="top:${top}%;height:${height}%;--event-color:${color};--event-left:${left}%;--event-width:${width}%;">
+        return `<div class="vday-event${isPlanned ? '' : ' vday-event-readonly'}" draggable="${isPlanned}" data-vday-entry-id="${entry.id}" style="top:${top}%;height:${height}%;--event-color:${color};--event-left:${left}%;--event-width:${width}%;">
             <div class="vday-event-content">
                 <strong>${escHtml(entry.task)}</strong>
                 <small class="vday-event-time">${minutesToTime(start)} – ${minutesToTime(end)} · ${fmt(entry.duration)}</small>
                 ${meta ? `<small>${escHtml(meta)}</small>` : ''}
                 ${tags ? `<div class="vday-event-tags">${tags}</div>` : ''}
             </div>
-            <div class="vday-resize-handle" draggable="false" title="Dauer ändern"></div>
+            ${isPlanned ? '<div class="vday-resize-handle" draggable="false" title="Dauer ändern"></div>' : ''}
         </div>`;
     }
 
@@ -1768,6 +1773,9 @@
         if (dateInput && !dateInput.value) dateInput.value = state.vdayDate || todayStr();
         const selectedDate = getVDayDate();
         state.vdayDate = selectedDate;
+        const selectedType = getVDayEntryType();
+        const showingPlanned = selectedType === 'geplant';
+        view.dataset.entryType = selectedType;
 
         const dateLabel = $('#vday-date-label');
         if (dateLabel) {
@@ -1781,13 +1789,17 @@
 
         renderVDayTimeline();
 
-        const dayEntries = plannedEntries().filter((entry) => entry.date === selectedDate);
+        const boardTitle = $('#vday-board-title');
+        if (boardTitle) boardTitle.textContent = showingPlanned ? 'Tagesplanung' : 'Tagesverlauf';
+
+        const dayEntries = vDayEntries(selectedType).filter((entry) => entry.date === selectedDate);
         const dropzone = $('#vday-dropzone');
         if (dropzone) {
+            dropzone.setAttribute('aria-label', showingPlanned ? 'Tagesplanung' : 'Erfolgte Einträge');
             const eventLayouts = layoutVDayEvents(dayEntries);
             dropzone.innerHTML = dayEntries.length
                 ? dayEntries.map((entry) => renderVDayEvent(entry, eventLayouts.get(entry.id))).join('')
-                : '<div class="vday-empty-day">Geplante Einträge hier ablegen</div>';
+                : `<div class="vday-empty-day">${showingPlanned ? 'Geplante Einträge hier ablegen' : 'Keine erfolgten Einträge an diesem Tag.'}</div>`;
         }
 
         const repoEntries = getVDayRepoEntries();
@@ -1818,6 +1830,9 @@
     $('#vday-next')?.addEventListener('click', () => setVDayDate(shiftDateStr(getVDayDate(), 1)));
     $('#vday-today')?.addEventListener('click', () => setVDayDate(todayStr()));
     $('#vday-reset')?.addEventListener('click', resetVDayFilters);
+    $$('input[name="vday-entry-type"]').forEach((radio) => {
+        radio.addEventListener('change', renderVDay);
+    });
 
     document.addEventListener('dragstart', (event) => {
         if (event.target.closest('.vday-resize-handle, .vday-repo-edit')) {
@@ -1831,6 +1846,7 @@
     });
 
     $('#vday-dropzone')?.addEventListener('dragover', (event) => {
+        if (getVDayEntryType() !== 'geplant') return;
         event.preventDefault();
         event.currentTarget.classList.add('drag-over');
     });
@@ -1842,9 +1858,10 @@
     $('#vday-dropzone')?.addEventListener('drop', (event) => {
         event.preventDefault();
         event.currentTarget.classList.remove('drag-over');
+        if (getVDayEntryType() !== 'geplant') return;
         const entryId = event.dataTransfer.getData('text/plain');
         const entry = state.entries.find((item) => item.id === entryId);
-        if (!entry) return;
+        if (!entry || normalizeEntryType(entry.entryType) !== 'geplant') return;
 
         const durationMinutes = Math.max(VDAY_STEP_MINUTES, snapMinutes((entry.duration || VDAY_STEP_MINUTES * 60) / 60));
         setEntrySchedule(entry, getVDayDate(), getDropMinutes(event.clientY), durationMinutes);
@@ -1858,7 +1875,7 @@
         const eventEl = handle.closest('.vday-event');
         const entry = state.entries.find((item) => item.id === eventEl?.dataset.vdayEntryId);
         const dropzone = $('#vday-dropzone');
-        if (!entry || !dropzone) return;
+        if (!entry || normalizeEntryType(entry.entryType) !== 'geplant' || !dropzone) return;
 
         vdayResize = {
             entryId: entry.id,
@@ -1910,7 +1927,7 @@
         const eventEl = handle.closest('.vday-event');
         const entry = state.entries.find((item) => item.id === eventEl?.dataset.vdayEntryId);
         const dropzone = $('#vday-dropzone');
-        if (!entry || !dropzone) return;
+        if (!entry || normalizeEntryType(entry.entryType) !== 'geplant' || !dropzone) return;
 
         vdayResize = {
             entryId: entry.id,

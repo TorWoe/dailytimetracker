@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=dtt-fixed-sync-button-20260709-1">
+    <link rel="stylesheet" href="style.css?v=dtt-vday-entry-type-20260817-1">
 </head>
 <body>
     <div class="app">
@@ -109,6 +109,10 @@
                 <div>
                     <h2>visual Day</h2>
                     <div class="vday-date-label" id="vday-date-label"></div>
+                    <div class="entry-type-row vday-entry-type-row" id="vday-entry-type-row">
+                        <label><input type="radio" name="vday-entry-type" value="erfolgt"> erfolgt</label>
+                        <label><input type="radio" name="vday-entry-type" value="geplant" checked> geplant</label>
+                    </div>
                 </div>
                 <div class="vday-controls-stack">
                     <div class="vday-controls">
@@ -133,14 +137,14 @@
             <div class="vday-layout">
                 <div class="vday-board">
                     <div class="vday-board-head">
-                        <h3>Tagesplanung</h3>
+                        <h3 id="vday-board-title">Tagesplanung</h3>
                     </div>
                     <div class="vday-scroll" id="vday-scroll">
                         <div class="vday-timeline" id="vday-timeline"></div>
                         <div class="vday-dropzone" id="vday-dropzone" aria-label="Tagesplanung"></div>
                     </div>
                 </div>
-                <aside class="vday-repository">
+                <aside class="vday-repository" id="vday-repository">
                     <div class="vday-repo-head">
                         <h3>Geplante Einträge</h3>
                         <span id="vday-repo-count"></span>
@@ -456,7 +460,7 @@
 
     <script src="vendor/msal-browser.min.js?v=2.38.3"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="default-tips.js?v=dtt-fixed-sync-button-20260709-1"></script>
-    <script src="app.js?v=dtt-fixed-sync-button-20260709-1"></script>
+    <script src="default-tips.js?v=dtt-vday-entry-type-20260817-1"></script>
+    <script src="app.js?v=dtt-vday-entry-type-20260817-1"></script>
 </body>
 </html>
