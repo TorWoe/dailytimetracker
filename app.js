@@ -8,7 +8,7 @@
         tips: 'dtt_tips',
     };
     const STORAGE_META_KEY = 'dtt_sync_meta';
-    const APP_VERSION = 'dtt-vday-entry-type-20260817-1';
+    const APP_VERSION = 'dtt-search-edit-20260818-1';
     const APP_VERSION_FILE = 'app-version.json';
     const APP_REFRESH_PARAM = 'appRefresh';
     const APP_REFRESH_SESSION_KEY = 'dtt_app_refresh_version';
@@ -2847,7 +2847,35 @@
         list.innerHTML = sortTips(tips).map((t) => renderTipCard(t)).join('');
     }
 
+    let searchResultMode = 'filtered';
+
+    function renderSearchEntryCard(entry) {
+        const project = state.projects.find((p) => p.id === entry.project);
+        const category = state.categories.find((c) => c.id === entry.category);
+        const tagsHtml = (entry.tags || []).map((tag) => `<span class="tag">${escHtml(tag)}</span>`).join('');
+        const projectBadge = project ? `<span class="project-badge" style="background:${project.color}33;color:${project.color}">${escHtml(project.name)}</span>` : '';
+        const categoryBadge = category ? `<span class="category-badge" style="background:${category.color}33;color:${category.color}">${escHtml(category.name)}</span>` : '';
+        const typeBadge = `<span class="entry-type-badge">${escHtml(normalizeEntryType(entry.entryType))}</span>`;
+
+        return `<div class="entry-card">
+            <div class="entry-info">
+                <div class="entry-task">${escHtml(entry.task)}</div>
+                <div class="entry-meta">
+                    <span>${entry.date}</span>
+                    <span>${entry.start} – ${entry.end}</span>
+                    ${typeBadge}${projectBadge}${categoryBadge}
+                </div>
+                <div style="margin-top:4px">${tagsHtml}</div>
+            </div>
+            <div class="entry-duration">${fmt(entry.duration)}</div>
+            <div class="entry-actions">
+                <button onclick="app.editEntry('${entry.id}')">Bearbeiten</button>
+            </div>
+        </div>`;
+    }
+
     function renderSearch() {
+        searchResultMode = 'filtered';
         const { filtered, query, selectedType, selectedProjects, selectedCategories } = getSearchFiltered();
         const chartEntries = getSearchChartEntries(query, selectedProjects, selectedCategories);
 
@@ -2878,29 +2906,7 @@
             list.innerHTML = '<div class="no-entries">Keine Einträge gefunden.</div>';
             renderSummaryCards('#search-summary', []);
         } else {
-            list.innerHTML = filtered
-                .map((e) => {
-                    const proj = state.projects.find((p) => p.id === e.project);
-                    const cat = state.categories.find((c) => c.id === e.category);
-                    const tagsHtml = (e.tags || []).map((t) => `<span class="tag">${escHtml(t)}</span>`).join('');
-                    const projBadge = proj ? `<span class="project-badge" style="background:${proj.color}33;color:${proj.color}">${escHtml(proj.name)}</span>` : '';
-                    const catBadge = cat ? `<span class="category-badge" style="background:${cat.color}33;color:${cat.color}">${escHtml(cat.name)}</span>` : '';
-                    const typeBadge = `<span class="entry-type-badge">${escHtml(normalizeEntryType(e.entryType))}</span>`;
-
-                    return `<div class="entry-card">
-                        <div class="entry-info">
-                            <div class="entry-task">${escHtml(e.task)}</div>
-                            <div class="entry-meta">
-                                <span>${e.date}</span>
-                                <span>${e.start} – ${e.end}</span>
-                                ${typeBadge}${projBadge}${catBadge}
-                            </div>
-                            <div style="margin-top:4px">${tagsHtml}</div>
-                        </div>
-                        <div class="entry-duration">${fmt(e.duration)}</div>
-                </div>`;
-            })
-            .join('');
+            list.innerHTML = filtered.map((entry) => renderSearchEntryCard(entry)).join('');
             renderSummaryCards('#search-summary', filtered);
         }
 
@@ -2946,7 +2952,8 @@
         URL.revokeObjectURL(url);
     });
 
-    $('#btn-show-all').addEventListener('click', () => {
+    function renderAllSearchEntries() {
+        searchResultMode = 'all';
         const selectedType = getSelectedEntryType('search-entry-type');
         if (!selectedType) {
             $('#search-entries-block').style.display = 'none';
@@ -2976,34 +2983,14 @@
             return;
         }
 
-        list.innerHTML = filtered
-            .map((e) => {
-                const proj = state.projects.find((p) => p.id === e.project);
-                const cat = state.categories.find((c) => c.id === e.category);
-                const tagsHtml = (e.tags || []).map((t) => `<span class="tag">${escHtml(t)}</span>`).join('');
-                const projBadge = proj ? `<span class="project-badge" style="background:${proj.color}33;color:${proj.color}">${escHtml(proj.name)}</span>` : '';
-                const catBadge = cat ? `<span class="category-badge" style="background:${cat.color}33;color:${cat.color}">${escHtml(cat.name)}</span>` : '';
-                const typeBadge = `<span class="entry-type-badge">${escHtml(normalizeEntryType(e.entryType))}</span>`;
-
-                return `<div class="entry-card">
-                    <div class="entry-info">
-                        <div class="entry-task">${escHtml(e.task)}</div>
-                        <div class="entry-meta">
-                            <span>${e.date}</span>
-                            <span>${e.start} – ${e.end}</span>
-                            ${typeBadge}${projBadge}${catBadge}
-                        </div>
-                        <div style="margin-top:4px">${tagsHtml}</div>
-                    </div>
-                    <div class="entry-duration">${fmt(e.duration)}</div>
-                </div>`;
-            })
-            .join('');
+        list.innerHTML = filtered.map((entry) => renderSearchEntryCard(entry)).join('');
 
         renderSummaryCards('#search-summary', filtered);
         renderSearchCharts(filtered, state.entries);
         renderSearchTips(state.tips);
-    });
+    }
+
+    $('#btn-show-all').addEventListener('click', renderAllSearchEntries);
 
     $('#btn-search').addEventListener('click', renderSearch);
     $('#search-text').addEventListener('keydown', (e) => {
@@ -3337,6 +3324,10 @@
         editingEntryId = null;
         renderEntries();
         renderVDayIfActive();
+        if ($('#search')?.classList.contains('active')) {
+            if (searchResultMode === 'all') renderAllSearchEntries();
+            else renderSearch();
+        }
     });
 
     $('#edit-cancel').addEventListener('click', () => {
