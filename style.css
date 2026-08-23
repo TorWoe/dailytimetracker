@@ -248,11 +248,13 @@ input::placeholder {
     font-weight: 600;
 }
 
-.entry-type-row input[type="radio"] {
+.entry-type-row input[type="radio"],
+.entry-type-row input[type="checkbox"] {
     accent-color: var(--primary);
 }
 
-.entry-type-row label:has(input[type="radio"]:disabled) {
+.entry-type-row label:has(input[type="radio"]:disabled),
+.entry-type-row label:has(input[type="checkbox"]:disabled) {
     opacity: 0.55;
     cursor: not-allowed;
 }

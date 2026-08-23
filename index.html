@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=dtt-search-edit-20260818-1">
+    <link rel="stylesheet" href="style.css?v=dtt-entry-type-multiselect-20260823-1">
 </head>
 <body>
     <div class="app">
@@ -110,8 +110,8 @@
                     <h2>visual Day</h2>
                     <div class="vday-date-label" id="vday-date-label"></div>
                     <div class="entry-type-row vday-entry-type-row" id="vday-entry-type-row">
-                        <label><input type="radio" name="vday-entry-type" value="erfolgt"> erfolgt</label>
-                        <label><input type="radio" name="vday-entry-type" value="geplant" checked> geplant</label>
+                        <label><input type="checkbox" name="vday-entry-type" value="erfolgt"> erfolgt</label>
+                        <label><input type="checkbox" name="vday-entry-type" value="geplant" checked> geplant</label>
                     </div>
                 </div>
                 <div class="vday-controls-stack">
@@ -159,8 +159,8 @@
             <div class="entries-header">
                 <h2>Zeiteinträge</h2>
                 <div class="entry-type-row" id="entries-entry-type-row">
-                    <label><input type="radio" name="entries-entry-type" value="erfolgt" checked> erfolgt</label>
-                    <label><input type="radio" name="entries-entry-type" value="geplant"> geplant</label>
+                    <label><input type="checkbox" name="entries-entry-type" value="erfolgt" checked> erfolgt</label>
+                    <label><input type="checkbox" name="entries-entry-type" value="geplant"> geplant</label>
                 </div>
                 <div class="entries-filters">
                     <button id="filter-date-prev" class="btn btn-small">&larr;</button>
@@ -206,8 +206,8 @@
             <div class="search-header">
                 <h2>Suche</h2>
                 <div class="entry-type-row" id="search-entry-type-row">
-                    <label><input type="radio" name="search-entry-type" value="erfolgt" checked> erfolgt</label>
-                    <label><input type="radio" name="search-entry-type" value="geplant"> geplant</label>
+                    <label><input type="checkbox" name="search-entry-type" value="erfolgt" checked> erfolgt</label>
+                    <label><input type="checkbox" name="search-entry-type" value="geplant"> geplant</label>
                 </div>
                 <div class="search-filters">
                     <input type="text" id="search-text" placeholder="Aufgabe oder Tag suchen...">
@@ -263,8 +263,8 @@
             <div class="reports-header">
                 <h2>Berichte</h2>
                 <div class="entry-type-row" id="reports-entry-type-row">
-                    <label><input type="radio" name="reports-entry-type" value="erfolgt" checked> erfolgt</label>
-                    <label><input type="radio" name="reports-entry-type" value="geplant"> geplant</label>
+                    <label><input type="checkbox" name="reports-entry-type" value="erfolgt" checked> erfolgt</label>
+                    <label><input type="checkbox" name="reports-entry-type" value="geplant"> geplant</label>
                 </div>
                 <div class="report-controls">
                     <button class="report-tab active" data-period="day">Tag</button>
@@ -460,7 +460,7 @@
 
     <script src="vendor/msal-browser.min.js?v=2.38.3"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="default-tips.js?v=dtt-search-edit-20260818-1"></script>
-    <script src="app.js?v=dtt-search-edit-20260818-1"></script>
+    <script src="default-tips.js?v=dtt-entry-type-multiselect-20260823-1"></script>
+    <script src="app.js?v=dtt-entry-type-multiselect-20260823-1"></script>
 </body>
 </html>
