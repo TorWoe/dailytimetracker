@@ -2665,6 +2665,14 @@ body.vday-resizing {
     outline: none;
 }
 
+@media (min-width: 1180px) {
+    .header-sync:has(.sync-panel[data-sync-status="synced"]) {
+        top: auto;
+        bottom: 38px;
+        padding-top: 0;
+    }
+}
+
 @media (max-width: 980px) {
     .app {
         padding-top: 20px;

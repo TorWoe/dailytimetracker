@@ -8,7 +8,7 @@
         tips: 'dtt_tips',
     };
     const STORAGE_META_KEY = 'dtt_sync_meta';
-    const APP_VERSION = 'dtt-entry-type-multiselect-20260823-1';
+    const APP_VERSION = 'dtt-sync-status-nav-row-20260825-1';
     const APP_VERSION_FILE = 'app-version.json';
     const APP_REFRESH_PARAM = 'appRefresh';
     const APP_REFRESH_SESSION_KEY = 'dtt_app_refresh_version';
