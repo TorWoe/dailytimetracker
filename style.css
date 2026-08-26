@@ -2666,9 +2666,10 @@ body.vday-resizing {
 }
 
 @media (min-width: 1180px) {
-    .header-sync:has(.sync-panel[data-sync-status="synced"]) {
+    .header-sync {
         top: auto;
-        bottom: 38px;
+        bottom: 28px;
+        max-width: 320px;
         padding-top: 0;
     }
 }
