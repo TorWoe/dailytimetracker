@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=dtt-sync-status-nav-row-all-20260826-1">
+    <link rel="stylesheet" href="style.css?v=dtt-entries-period-20261024-1">
 </head>
 <body>
     <div class="app">
@@ -172,6 +172,12 @@
                     <select id="filter-category">
                         <option value="">Alle Kategorien</option>
                     </select>
+                </div>
+                <div class="report-controls" id="entries-period-controls" role="group" aria-label="Zeitraum für Einträge">
+                    <button type="button" class="report-tab active" data-period="day" aria-pressed="true">Tag</button>
+                    <button type="button" class="report-tab" data-period="week" aria-pressed="false">Woche</button>
+                    <button type="button" class="report-tab" data-period="month" aria-pressed="false">Monat</button>
+                    <button type="button" class="report-tab" data-period="year" aria-pressed="false">Jahr</button>
                 </div>
                 <div class="entries-actions-row">
                     <button id="btn-entries-show-all" class="btn btn-secondary">Alle anzeigen</button>
@@ -460,7 +466,7 @@
 
     <script src="vendor/msal-browser.min.js?v=2.38.3"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="default-tips.js?v=dtt-sync-status-nav-row-all-20260826-1"></script>
-    <script src="app.js?v=dtt-sync-status-nav-row-all-20260826-1"></script>
+    <script src="default-tips.js?v=dtt-entries-period-20261024-1"></script>
+    <script src="app.js?v=dtt-entries-period-20261024-1"></script>
 </body>
 </html>

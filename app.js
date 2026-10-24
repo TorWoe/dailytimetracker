@@ -8,7 +8,7 @@
         tips: 'dtt_tips',
     };
     const STORAGE_META_KEY = 'dtt_sync_meta';
-    const APP_VERSION = 'dtt-sync-status-nav-row-all-20260826-1';
+    const APP_VERSION = 'dtt-entries-period-20261024-1';
     const APP_VERSION_FILE = 'app-version.json';
     const APP_REFRESH_PARAM = 'appRefresh';
     const APP_REFRESH_SESSION_KEY = 'dtt_app_refresh_version';
@@ -65,6 +65,7 @@
             conflictData: null,
         },
         timer: { running: false, paused: false, startTime: null, elapsed: 0, interval: null },
+        entriesPeriod: 'day',
         reportPeriod: 'day',
         reportOffset: 0,
         reportCustomStart: '',
@@ -1996,9 +1997,46 @@
     });
 
     // ── Entries View ──
+    function getEntriesRange() {
+        const value = $('#filter-date').value;
+        if (!value) return null;
+        const start = new Date(value + 'T00:00:00');
+        const end = new Date(start);
+        if (state.entriesPeriod === 'week') {
+            start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+            end.setTime(start.getTime());
+            end.setDate(end.getDate() + 6);
+        } else if (state.entriesPeriod === 'month') {
+            start.setDate(1);
+            end.setMonth(end.getMonth() + 1, 0);
+        } else if (state.entriesPeriod === 'year') {
+            start.setMonth(0, 1);
+            end.setMonth(11, 31);
+        }
+        return { start: localDateStr(start), end: localDateStr(end) };
+    }
+
+    function updateEntriesPeriodControls() {
+        const hasDate = Boolean($('#filter-date').value);
+        $$('#entries-period-controls .report-tab').forEach((tab) => {
+            const active = hasDate && tab.dataset.period === state.entriesPeriod;
+            tab.classList.toggle('active', active);
+            tab.setAttribute('aria-pressed', String(active));
+        });
+    }
+
+    $$('#entries-period-controls .report-tab').forEach((tab) => {
+        tab.addEventListener('click', () => {
+            state.entriesPeriod = tab.dataset.period;
+            if (!$('#filter-date').value) $('#filter-date').value = todayStr();
+            renderEntries();
+        });
+    });
+
     function renderEntries() {
+        updateEntriesPeriodControls();
         const selectedTypes = getSelectedEntryTypes('entries-entry-type');
-        const filterDate = $('#filter-date').value;
+        const range = getEntriesRange();
         const filterProject = $('#filter-project').value;
         const filterCategory = $('#filter-category').value;
         const list = $('#entries-list');
@@ -2012,12 +2050,12 @@
 
         let filtered = [...state.entries];
         filtered = filtered.filter((e) => selectedTypes.includes(normalizeEntryType(e.entryType)));
-        if (filterDate) filtered = filtered.filter((e) => e.date === filterDate);
+        if (range) filtered = filtered.filter((e) => e.date >= range.start && e.date <= range.end);
         if (filterProject) filtered = filtered.filter((e) => e.project === filterProject);
         if (filterCategory) filtered = filtered.filter((e) => e.category === filterCategory);
 
         let chartEntries = [...state.entries];
-        if (filterDate) chartEntries = chartEntries.filter((e) => e.date === filterDate);
+        if (range) chartEntries = chartEntries.filter((e) => e.date >= range.start && e.date <= range.end);
         if (filterProject) chartEntries = chartEntries.filter((e) => e.project === filterProject);
         if (filterCategory) chartEntries = chartEntries.filter((e) => e.category === filterCategory);
 
@@ -2071,21 +2109,25 @@
     $('#filter-category').addEventListener('change', renderEntries);
     addEntryTypeFilterListeners('entries-entry-type', renderEntries);
 
-    $('#filter-date-prev').addEventListener('click', () => {
+    function moveEntriesDate(direction) {
         const el = $('#filter-date');
         const d = el.value ? new Date(el.value + 'T00:00:00') : new Date();
-        d.setDate(d.getDate() - 1);
-        el.value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        if (state.entriesPeriod === 'month' || state.entriesPeriod === 'year') {
+            const day = d.getDate();
+            d.setDate(1);
+            if (state.entriesPeriod === 'month') d.setMonth(d.getMonth() + direction);
+            else d.setFullYear(d.getFullYear() + direction);
+            const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+            d.setDate(Math.min(day, lastDay));
+        } else {
+            d.setDate(d.getDate() + direction * (state.entriesPeriod === 'week' ? 7 : 1));
+        }
+        el.value = localDateStr(d);
         renderEntries();
-    });
+    }
 
-    $('#filter-date-next').addEventListener('click', () => {
-        const el = $('#filter-date');
-        const d = el.value ? new Date(el.value + 'T00:00:00') : new Date();
-        d.setDate(d.getDate() + 1);
-        el.value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-        renderEntries();
-    });
+    $('#filter-date-prev').addEventListener('click', () => moveEntriesDate(-1));
+    $('#filter-date-next').addEventListener('click', () => moveEntriesDate(1));
 
     $('#btn-entries-show-all').addEventListener('click', () => {
         $('#filter-date').value = '';
@@ -2103,7 +2145,7 @@
     // ── CSV Export ──
     $('#btn-export').addEventListener('click', () => {
         const selectedTypes = getSelectedEntryTypes('entries-entry-type');
-        const filterDate = $('#filter-date').value;
+        const range = getEntriesRange();
         const filterProject = $('#filter-project').value;
         const filterCategory = $('#filter-category').value;
 
@@ -2114,7 +2156,7 @@
 
         let filtered = [...state.entries];
         filtered = filtered.filter((e) => selectedTypes.includes(normalizeEntryType(e.entryType)));
-        if (filterDate) filtered = filtered.filter((e) => e.date === filterDate);
+        if (range) filtered = filtered.filter((e) => e.date >= range.start && e.date <= range.end);
         if (filterProject) filtered = filtered.filter((e) => e.project === filterProject);
         if (filterCategory) filtered = filtered.filter((e) => e.category === filterCategory);
 
@@ -2296,9 +2338,9 @@
         });
     }
 
-    $$('.report-tab').forEach((tab) => {
+    $$('#reports .report-tab').forEach((tab) => {
         tab.addEventListener('click', () => {
-            $$('.report-tab').forEach((t) => t.classList.remove('active'));
+            $$('#reports .report-tab').forEach((t) => t.classList.remove('active'));
             tab.classList.add('active');
             state.reportPeriod = tab.dataset.period;
             state.reportOffset = 0;
@@ -2318,7 +2360,7 @@
             alert('Startdatum muss vor dem Enddatum liegen.');
             return;
         }
-        $$('.report-tab').forEach((t) => t.classList.remove('active'));
+        $$('#reports .report-tab').forEach((t) => t.classList.remove('active'));
         state.reportPeriod = 'custom';
         state.reportCustomStart = startVal;
         state.reportCustomEnd = endVal;
@@ -3604,8 +3646,8 @@
             $('#reports').classList.add('active');
             state.reportPeriod = 'day';
             state.reportOffset = 0;
-            $$('.report-tab').forEach((t) => t.classList.remove('active'));
-            $('[data-period="day"]').classList.add('active');
+            $$('#reports .report-tab').forEach((t) => t.classList.remove('active'));
+            $('#reports [data-period="day"]').classList.add('active');
             updateReportNav();
             renderReports();
         } else if (reloadView === 'tracker') {
