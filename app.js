@@ -8,7 +8,7 @@
         tips: 'dtt_tips',
     };
     const STORAGE_META_KEY = 'dtt_sync_meta';
-    const APP_VERSION = 'dtt-entries-period-20261024-1';
+    const APP_VERSION = 'dtt-report-range-reset-20261024-1';
     const APP_VERSION_FILE = 'app-version.json';
     const APP_REFRESH_PARAM = 'appRefresh';
     const APP_REFRESH_SESSION_KEY = 'dtt_app_refresh_version';
@@ -2364,6 +2364,20 @@
         state.reportPeriod = 'custom';
         state.reportCustomStart = startVal;
         state.reportCustomEnd = endVal;
+        updateReportNav();
+        renderReports();
+    });
+
+    $('#report-range-reset').addEventListener('click', () => {
+        $('#report-range-start').value = '';
+        $('#report-range-end').value = '';
+        state.reportCustomStart = '';
+        state.reportCustomEnd = '';
+        state.reportPeriod = 'day';
+        state.reportOffset = 0;
+        $$('#reports .report-tab').forEach((tab) => {
+            tab.classList.toggle('active', tab.dataset.period === 'day');
+        });
         updateReportNav();
         renderReports();
     });
